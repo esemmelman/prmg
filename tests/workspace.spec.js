@@ -84,7 +84,7 @@ test('project, task, subtask, comment, knowledge page and milestone workflows',a
   await page.setViewportSize({width:390,height:844})
   await expect(page.getByRole('button',{name:'Open navigation'})).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  await page.screenshot({path:'test-results/mobile.png',fullPage:true})
+  await page.screenshot({path:'test-results/mobile.png',fullPage:true,animations:'disabled'})
   await page.getByRole('button',{name:'Open navigation'}).click()
   await page.getByRole('button',{name:'Workspace settings',exact:true}).click()
   const download = page.waitForEvent('download')
