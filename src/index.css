@@ -125,3 +125,9 @@ body, .login-page {
   .gantt-name { font-size: 14px; }
   .gantt-header > .gantt-label { letter-spacing: 0; }
 }
+
+.gantt-name[draggable="true"], .gantt-bar[draggable="true"] { cursor: grab; }
+.gantt-name[draggable="true"]:active, .gantt-bar[draggable="true"]:active { cursor: grabbing; }
+.gantt-drop-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: #426951; z-index: 3; pointer-events: none; }
+.gantt-drop-marker span { position: absolute; top: 0; left: 4px; padding: 3px 6px; background: #426951; color: white; border-radius: 4px; white-space: nowrap; font-size: 14px; }
+.gantt-move-status { min-height: 24px; color: #426951; font-size: 14px; margin-bottom: 8px; }

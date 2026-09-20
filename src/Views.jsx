@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowUpRight, Plus, MoreHorizontal, CalendarDays, Check, Circle, BookOpen, Pin, ChevronLeft, ChevronRight, ChevronDown, CheckCheck, FolderOpen, MessageSquare, LayoutGrid, List, Search } from 'lucide-react'
 import { TASK_STATUSES, PROJECT_STATUSES, PRIORITIES, today, addDays, dayDiff, dateValue, formatDate, progress, overdue, matches } from './utils'
 
@@ -84,10 +84,14 @@ export function Knowledge({ data, projectId, search, onEdit }) {
   return <><div className="view-toolbar"><div className="filter-tabs"><button className={category === 'All' ? 'selected' : ''} onClick={() => setCategory('All')}>All pages</button>{categories.map(c => <button key={c} className={category === c ? 'selected' : ''} onClick={() => setCategory(c)}>{c}</button>)}</div><span className="muted">{documents.length} pages</span></div>{documents.length ? <div className="document-grid">{documents.map(d => <button key={d.id} className="document-card" onClick={() => onEdit('documents',d)}><div className="document-card-top"><span className="document-icon"><BookOpen size={22}/></span><span className="label">{d.category}</span>{d.pinned && <Pin size={15}/>}</div><h3>{d.title}</h3><p>{d.content.replace(/[#*`>[\]]/g,'').slice(0,155) || 'No content yet.'}</p><div className="document-card-bottom"><ProjectName id={d.project_id} projects={data.projects}/><span>{formatDate(d.updated_at)}</span></div></button>)}</div> : <Empty icon={BookOpen} title="Good ideas deserve a place" text="Keep plans, decisions, research, and meeting notes connected to your projects." action={() => onEdit('documents')} label="Create a page"/>}</>
 }
 
-export function GanttChart({ data, projectId, search, onEdit, includeArchived = false }) {
+export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDates, includeArchived = false }) {
   const [start, setStart] = useState(() => addDays(today(), -3))
   const [days, setDays] = useState(30)
   const [collapsed, setCollapsed] = useState(new Set())
+  const drag = useRef(null)
+  const [preview, setPreview] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [moveError, setMoveError] = useState('')
   const end = addDays(start, days - 1)
   const projects = data.projects.filter(p => projectId ? p.id === projectId : includeArchived || p.status !== 'archived')
   const groups = projects.map(project => {
@@ -109,6 +113,55 @@ export function GanttChart({ data, projectId, search, onEdit, includeArchived = 
   }
   const cellWidth = days <= 30 ? 36 : days <= 90 ? 18 : 8
   const chartWidth = days * cellWidth
+  function beginDrag(event, item, fromBar = false) {
+    if (saving) { event.preventDefault(); return }
+    const first = item.start_date || item.due_date
+    const lane = event.currentTarget.closest('.gantt-row').querySelector('.gantt-lane')
+    const offset = fromBar && first ? Math.floor((event.clientX - lane.getBoundingClientRect().left) / cellWidth) - dayDiff(start, first) : 0
+    drag.current = {item, offset}
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', item.title)
+    setMoveError('')
+  }
+  function destination(event) {
+    const lane = event.target.closest('.gantt-lane')
+    if (!lane || !drag.current) return null
+    const day = Math.max(0, Math.min(days - 1, Math.floor((event.clientX - lane.getBoundingClientRect().left) / cellWidth)))
+    return addDays(start, day - drag.current.offset)
+  }
+  async function moveTask(item, date) {
+    const first = item.start_date || item.due_date
+    const shift = first ? dayDiff(first, date) : 0
+    if (first && !shift) return
+    const values = first ? {start_date: item.start_date ? addDays(item.start_date, shift) : null, due_date: item.due_date ? addDays(item.due_date, shift) : null} : {start_date: date, due_date: date}
+    setSaving(true); setMoveError('')
+    try { await saveDates('tasks', values, item) }
+    catch (error) { setMoveError(`Could not move ${item.title}: ${error.message}`) }
+    finally { setSaving(false) }
+  }
+  function dropTask(event) {
+    const date = destination(event)
+    if (!date || !drag.current) return
+    event.preventDefault()
+    const {item} = drag.current
+    drag.current = null; setPreview(null)
+    void moveTask(item, date)
+  }
+  function dragOver(event) {
+    const date = destination(event)
+    if (!date) return
+    event.preventDefault(); event.dataTransfer.dropEffect = 'move'
+    setPreview({id: drag.current.item.id, title: drag.current.item.title, date})
+  }
+  function keyboardMove(event, item) {
+    if (!event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key) || saving) return
+    event.preventDefault()
+    void moveTask(item, addDays(item.start_date || item.due_date || today(), event.key === 'ArrowRight' ? 1 : -1))
+  }
+  function dragProps(item, fromBar = false) {
+    return {draggable: !saving, onDragStart: event => beginDrag(event, item, fromBar), onDragEnd: () => { drag.current = null; setPreview(null) }, onKeyDown: event => keyboardMove(event, item), 'aria-describedby': 'gantt-drag-help'}
+  }
+
   const monthBands = []
   for (let index = 0; index < days; index++) {
     const date = addDays(start, index)
@@ -130,19 +183,20 @@ export function GanttChart({ data, projectId, search, onEdit, includeArchived = 
     return <div className={`gantt-row ${summary ? 'gantt-summary' : ''}`} key={`${item.type}-${item.id}`}>
       <div className="gantt-label">
         {summary && <button className="icon-button" aria-label={`${collapsed.has(project.id) ? 'Expand' : 'Collapse'} ${project.name}`} aria-expanded={!collapsed.has(project.id)} onClick={() => toggleProject(project.id)}>{collapsed.has(project.id) ? <ChevronRight size={17}/> : <ChevronDown size={17}/>}</button>}
-        <button className="gantt-name" onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : <Circle size={13}/>}<span>{item.title}<small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
+        <button className="gantt-name" {...(!summary ? dragProps(item) : {})} onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : <Circle size={13}/>}<span>{item.title}<small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
       </div>
-      <div className="gantt-lane">
+      <div className="gantt-lane" onDragOver={dragOver} onDrop={dropTask}>
+        {preview?.id === item.id && <div className="gantt-drop-marker" style={{left: Math.max(0, dayDiff(start, preview.date)) * cellWidth}}><span>{formatDate(preview.date)}</span></div>}
         {today() >= start && today() <= end && <div className="gantt-today" style={{left: (dayDiff(start, today()) + .5) * cellWidth}}/>}
-        {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : item.title}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
+        {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} {...(!summary ? dragProps(item, true) : {})} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : item.title}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
       </div>
     </div>
   }
-  return <><div className="view-toolbar"><div className="gantt-nav"><button className="icon-button" aria-label="Previous period" onClick={() => setStart(addDays(start,-days))}><ChevronLeft size={19}/></button><strong>{formatDate(start)} - {formatDate(end,true)}</strong><button className="icon-button" aria-label="Next period" onClick={() => setStart(addDays(start,days))}><ChevronRight size={19}/></button><button className="button secondary small" onClick={() => setStart(addDays(today(),-3))}>Today</button><button className="button secondary small" disabled={!scheduleDates.length} onClick={fitSchedule}>Fit schedule</button></div><div className="filters"><select aria-label="Gantt chart period" value={days} onChange={e => setDays(Number(e.target.value))}><option value={14}>2 weeks</option><option value={30}>30 days</option><option value={90}>90 days</option>{![14,30,90].includes(days) && <option value={days}>Full schedule · {days} days</option>}</select></div></div>
+  return <>{moveError && <div className="error-banner" role="alert">{moveError}</div>}<div className="gantt-move-status" role="status">{saving ? 'Saving new dates...' : preview ? `Move ${preview.title} to ${formatDate(preview.date, true)}` : ''}</div><div className="view-toolbar"><div className="gantt-nav"><button className="icon-button" aria-label="Previous period" onClick={() => setStart(addDays(start,-days))}><ChevronLeft size={19}/></button><strong>{formatDate(start)} - {formatDate(end,true)}</strong><button className="icon-button" aria-label="Next period" onClick={() => setStart(addDays(start,days))}><ChevronRight size={19}/></button><button className="button secondary small" onClick={() => setStart(addDays(today(),-3))}>Today</button><button className="button secondary small" disabled={!scheduleDates.length} onClick={fitSchedule}>Fit schedule</button></div><div className="filters"><select aria-label="Gantt chart period" value={days} onChange={e => setDays(Number(e.target.value))}><option value={14}>2 weeks</option><option value={30}>30 days</option><option value={90}>90 days</option>{![14,30,90].includes(days) && <option value={days}>Full schedule · {days} days</option>}</select></div></div>
     <div className="gantt-scroll" role="region" aria-label="Gantt chart" tabIndex={0}><div className="gantt-chart" style={{'--chart-width': `${chartWidth}px`, '--day-width': `${cellWidth}px`, '--week-width': `${cellWidth * 7}px`, '--weekend-offset': `${((6 - dateValue(start).getDay() + 7) % 7) * cellWidth}px`}}>
       <div className="gantt-header"><div className="gantt-label">PROJECT / TASK</div><div className="gantt-scale"><div className="gantt-months">{monthBands.map(month => <span key={month.month} style={{width: month.count * cellWidth}}>{dateValue(month.date).toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}</span>)}</div><div className="gantt-days">{Array.from({length: days}, (_, index) => { const date = dateValue(addDays(start, index)); return <span key={index} className={[0,6].includes(date.getDay()) ? 'weekend' : ''} style={{width: cellWidth}}>{days <= 30 || (days <= 90 ? index % 7 === 0 : index % 14 === 0) ? date.getDate() : ''}</span> })}</div></div></div>
       {groups.length ? groups.map(group => <div className="gantt-group" key={group.project.id}>{row(group.summary, group.project, true)}{!collapsed.has(group.project.id) && group.children.map(item => row(item, group.project))}</div>) : <div className="gantt-empty">No projects match this view.</div>}
-    </div></div><p className="gantt-hint"><span className="legend-line"/> Today <span>Bars show duration; darker fill shows completion. Click a task or bar to edit its dates.</span></p>
+    </div></div><p className="gantt-hint" id="gantt-drag-help"><span className="legend-line"/> Today <span>Bars show duration; darker fill shows completion. Drag a task title or bar to a date to reschedule it. Duration stays the same. Click to edit, or focus a task and press Alt + Left/Right to move it one day.</span></p>
   </>
 }
 
