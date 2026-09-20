@@ -69,7 +69,6 @@ body, .login-page {
 .inline-task { background: white; border: 1px solid var(--border); border-radius: 9px; padding: 12px; }
 .inline-task fieldset { padding: 0; display: grid; gap: 14px; }
 .inline-task input, .inline-task select { width: 100%; min-width: 0; }
-.inline-task-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .inline-task .text-link { text-align: left; }
 
 /* Wider project navigation and a grouped, scrollable Gantt chart. */
@@ -162,3 +161,6 @@ body, .login-page {
 }
 .gantt-task-balloon:active { cursor: grabbing; }
 .gantt-with-balloon .gantt-bar { top: auto; bottom: 12px; }
+
+.inline-task-entry { display: flex; align-items: center; gap: 6px; }
+.inline-task-entry input { flex: 1; min-width: 0; }

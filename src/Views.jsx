@@ -52,11 +52,10 @@ function InlineTask({ projects, projectId, status, onCreate, onEdit, onClose }) 
   }
   return <form className="inline-task" onSubmit={submit} onKeyDown={event => { if(event.key === 'Escape' && !busy) { event.preventDefault(); onClose() } }}>
     <fieldset disabled={busy}>
-      <label className="field"><span>Title</span><input autoFocus required maxLength={240} placeholder="What needs to be done?" value={title} onChange={event => setTitle(event.target.value)}/></label>
+      <div className="inline-task-entry"><input aria-label="Title" autoFocus required maxLength={240} value={title} onChange={event => setTitle(event.target.value)} onKeyDown={event => { if(event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form.requestSubmit() } }}/><button type="button" className="icon-button" aria-label="Open full task form" title="Open full task form" onClick={() => { onEdit('tasks', null, { title, status, project_id: selectedProject }); onClose() }}><ArrowUpRight size={18}/></button></div>
       {!projectId && <label className="field"><span>Project</span><select required value={selectedProject} onChange={event => setSelectedProject(event.target.value)}><option value="">Choose a project</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>}
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="inline-task-actions"><button className="button primary small" disabled={!title.trim() || !selectedProject || busy}>{busy ? 'Adding...' : 'Add task'}</button><button type="button" className="text-link" onClick={onClose}>Cancel</button></div>
-      <button type="button" className="text-link" onClick={() => { onEdit('tasks', null, { title, status, project_id: selectedProject }); onClose() }}>Open full task form <ArrowUpRight size={15}/></button>
+      {busy && <span className="muted" role="status">Saving...</span>}
     </fieldset>
   </form>
 }
