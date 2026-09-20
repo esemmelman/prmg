@@ -1,0 +1,160 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { LayoutDashboard, FolderOpen, ListTodo, BookOpen, CalendarDays, Search, Plus, ChevronDown, ArrowLeft, Settings2, LogOut, LockKeyhole, ArrowRight, LoaderCircle, RefreshCw, Menu, X, Download, ShieldCheck, CircleHelp, Sprout, Activity, Check } from 'lucide-react'
+import { supabase, loadWorkspace, saveRecord, removeRecord, emptyData } from './data'
+import { OWNER_ID, LOGIN_EMAIL } from './config'
+import { PROJECT_STATUSES, progress, downloadJson, formatDate } from './utils'
+import { Editor, Modal } from './Editor'
+import { Overview, Projects, Tasks, Knowledge, Timeline, Badge } from './Views'
+
+const nav = [ ['overview','Overview',LayoutDashboard], ['projects','Projects',FolderOpen], ['tasks','Tasks',ListTodo], ['knowledge','Knowledge base',BookOpen], ['timeline','Timeline',CalendarDays] ]
+const descriptions = { overview: 'A little perspective for everything you’re working on.', projects: 'A home for every idea, from first step to finish line.', tasks: 'Small steps. Meaningful progress.', knowledge: 'Everything you know, right where you need it.', timeline: 'See the bigger picture. Plan what comes next.' }
+
+function Login({ onLogin, error, busy }) {
+  const [password, setPassword] = useState('')
+  const [show, setShow] = useState(false)
+  return <main className="login-page"><div className="login-brand"><span className="brand-symbol"><Sprout size={22}/></span> folio<span className="brand-period">.</span></div><div className="login-card"><div className="login-illustration"><FolderOpen size={32}/><span className="tiny-check"><Check size={16}/></span></div><span className="eyebrow">YOUR PERSONAL PROJECT SPACE</span><h1>Good work starts<br/>with a clear mind.</h1><p>Projects, tasks, and ideas.<br/>Together in one quiet corner.</p><form onSubmit={e => { e.preventDefault(); onLogin(password) }}><label className="field"><span>Your Supabase app passcode</span><div className="password-input"><LockKeyhole size={17}/><input type={show ? 'text' : 'password'} required autoFocus autoComplete="current-password" aria-label="Passcode" placeholder="Enter your passcode" value={password} onChange={e => setPassword(e.target.value)}/><button type="button" onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</button></div></label>{error && <div className="form-error" role="alert">{error}</div>}<button className="button primary login-submit" disabled={busy}>{busy ? <LoaderCircle className="spin" size={18}/> : <>Open your workspace <ArrowRight size={17}/></>}</button></form><span className="login-security"><ShieldCheck size={15}/> Private workspace · Remembered for 90 days</span><p className="login-note">Use your existing Supabase app login password.<br/>This is separate from your database password.</p></div><div className="login-footer">A place for the work that matters.</div></main>
+}
+
+export default function App() {
+  const [session, setSession] = useState(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [verified, setVerified] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [loginBusy, setLoginBusy] = useState(false)
+  const [data, setData] = useState(emptyData)
+  const [loading, setLoading] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState('')
+  const [view, setView] = useState('overview')
+  const [projectId, setProjectId] = useState(null)
+  const [projectTab, setProjectTab] = useState('tasks')
+  const [taskFilter, setTaskFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [editor, setEditor] = useState(null)
+  const [settings, setSettings] = useState(false)
+  const [showActivity, setShowActivity] = useState(false)
+  const [sidebar, setSidebar] = useState(false)
+  const [toast, setToast] = useState('')
+  const [lastSync, setLastSync] = useState(null)
+  const [online, setOnline] = useState(navigator.onLine)
+  const searchRef = useRef(null)
+  const requestCounter = useRef(0)
+  const mutationBusy = useRef(false)
+  const sessionRef = useRef(null)
+  useEffect(() => { sessionRef.current = session }, [session])
+
+  // Synchronize the authenticated Supabase session with the remote workspace.
+  /* oxlint-disable react/set-state-in-effect */
+  useEffect(() => {
+    let active = true
+    supabase.auth.getSession().then(({data, error}) => { if (active) { setSession(data.session); setAuthReady(true); if(error) setAuthError(error.message) } })
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => { setSession(next); setAuthReady(true) })
+    return () => { active = false; listener.subscription.unsubscribe() }
+  }, [])
+
+  const refresh = useCallback(async (quiet = false) => {
+    if (!sessionRef.current) return
+    const request = ++requestCounter.current
+    if(!quiet) setLoading(true)
+    try {
+      const { data: valid, error: validationError } = await supabase.rpc('prmg_session_valid')
+      if(validationError) throw validationError
+      if(!valid || sessionRef.current?.user.id !== OWNER_ID) {
+        setAuthError('Your session has expired or does not have access. Please enter your passcode again.')
+        await supabase.auth.signOut({scope:'local'}); setSession(null); return
+      }
+      const next = await loadWorkspace()
+      if (request !== requestCounter.current || !sessionRef.current) return
+      setData(next); setVerified(true); setLoaded(true); setLastSync(new Date()); setError('')
+    } catch(err) { if(request === requestCounter.current) setError(err.message || 'Could not reach your workspace. Please retry.') }
+    finally { if(request === requestCounter.current) setLoading(false) }
+  }, [])
+
+  useEffect(() => {
+    if(session) refresh()
+    else { requestCounter.current++; setData(emptyData); setVerified(false); setLoaded(false); setEditor(null); setLoading(false); setError(''); setProjectId(null); setView('overview') }
+  }, [session, refresh])
+  /* oxlint-enable react/set-state-in-effect */
+
+  useEffect(() => {
+    const sync = () => { if(document.visibilityState === 'visible' && navigator.onLine && !mutationBusy.current) refresh(true) }
+    const connected = () => { setOnline(true); sync() }, disconnected = () => setOnline(false)
+    const timer = setInterval(sync,60000)
+    window.addEventListener('online',connected); window.addEventListener('offline',disconnected); window.addEventListener('focus',sync)
+    return () => { clearInterval(timer); window.removeEventListener('online',connected); window.removeEventListener('offline',disconnected); window.removeEventListener('focus',sync) }
+  },[refresh])
+  useEffect(() => { if(!toast) return; const timer = setTimeout(() => setToast(''),3500); return () => clearTimeout(timer) },[toast])
+  useEffect(() => { const key = e => { if((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); searchRef.current?.focus() } }; window.addEventListener('keydown',key); return () => window.removeEventListener('keydown',key) },[])
+
+  async function login(password) {
+    setLoginBusy(true); setAuthError('')
+    try {
+      const {error} = await supabase.auth.signInWithPassword({email:LOGIN_EMAIL,password})
+      if(error) setAuthError(error.status === 400 ? 'That passcode didn’t match your app login. Try again.' : error.message)
+    } catch(err) { setAuthError(err.message) } finally { setLoginBusy(false) }
+  }
+  async function logout() {
+    const {error} = await supabase.auth.signOut({scope:'local'})
+    if(error) { setError(error.message); return }
+    setSession(null); setSettings(false); setShowActivity(false); setAuthError(''); setSearch('')
+  }
+  function navigate(next, filter = 'all') { setView(next); setProjectId(null); setTaskFilter(filter); setSearch(''); setSidebar(false) }
+  function selectProject(id) { setProjectId(id); setView('project'); setProjectTab('tasks'); setSearch(''); setSidebar(false) }
+  function edit(type, item = null, defaults = {}) {
+    if(!online) { setError('You’re offline. Reconnect before making changes.'); return }
+    if(['tasks','milestones'].includes(type) && !data.projects.length) { setToast('Create a project first.'); type = 'projects'; item = null }
+    setEditor({type,item,projectId,defaults})
+  }
+  async function save(type, values, item) {
+    if(mutationBusy.current) throw new Error('Another change is saving. Please try again in a moment.')
+    if(!navigator.onLine) throw new Error('You’re offline. Reconnect to save your changes.')
+    mutationBusy.current = true
+    requestCounter.current++
+    try {
+      const row = await saveRecord(type,values,item)
+      setData(current => ({...current,[type]:item?.id ? current[type].map(r => r.id === item.id ? row : r) : [row,...current[type]]}))
+      setToast(item?.id ? 'Changes saved' : `${{projects:'Project',tasks:'Task',documents:'Page',milestones:'Milestone',comments:'Comment'}[type]} created`)
+      await refresh(true)
+      return row
+    } finally { mutationBusy.current = false }
+  }
+  async function quickSave(type, values, item) { try { await save(type,values,item) } catch(err) { setError(err.message) } }
+  async function remove(type,item) {
+    if(mutationBusy.current) throw new Error('Another change is saving. Please try again in a moment.')
+    mutationBusy.current = true
+    requestCounter.current++
+    try {
+      await removeRecord(type,item)
+      setData(current => ({...current,[type]:current[type].filter(r => r.id !== item.id)}))
+      if(type === 'projects' && item.id === projectId) navigate('projects')
+      setToast('Deleted'); await refresh(true)
+    } finally { mutationBusy.current = false }
+  }
+
+  const project = data.projects.find(p => p.id === projectId)
+  const currentView = projectId ? projectTab : view
+  const title = project?.name || nav.find(n => n[0] === view)?.[1] || 'Overview'
+  const createType = {overview:'projects',projects:'projects',tasks:'tasks',knowledge:'documents',timeline:'milestones'}[currentView] || 'projects'
+  const createLabel = {projects:'New project',tasks:'New task',documents:'New page',milestones:'New milestone'}[createType]
+  const props = {data,search,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,projectId}
+
+  if(!authReady) return <div className="app-loading"><Sprout size={30}/><p>Opening your workspace…</p></div>
+  if(!session) return <Login onLogin={login} error={authError} busy={loginBusy}/>
+  if(!verified || !loaded) return <div className="app-loading"><Sprout size={30}/><h2>{error ? 'Your workspace couldn’t load' : 'Making room for good work…'}</h2>{error ? <><p role="alert">{error}</p><button className="button primary" onClick={() => refresh()}>Try again</button><button className="button secondary" onClick={logout}>Back to sign in</button></> : <LoaderCircle className="spin" size={20}/>}</div>
+  return <div className="app-shell">
+    {sidebar && <button className="sidebar-overlay" aria-label="Close navigation" onClick={() => setSidebar(false)}/>}
+    <aside className={`sidebar ${sidebar ? 'open' : ''}`}><button className="brand" onClick={() => navigate('overview')}><span className="brand-symbol"><Sprout size={22}/></span>folio<span className="brand-period">.</span></button><div className="workspace-switch"><span className="workspace-avatar">E</span><div><strong>My workspace</strong><span>Personal space</span></div><ChevronDown size={15}/></div><span className="nav-caption">WORKSPACE</span><nav>{nav.map(([key,label,Icon]) => <button key={key} className={`nav-link ${view === key || key === 'projects' && projectId ? 'active' : ''}`} onClick={() => navigate(key)}><Icon size={18}/><span>{label}</span>{key === 'projects' && <small>{data.projects.filter(p => p.status !== 'archived').length}</small>}</button>)}</nav><div className="sidebar-projects-heading"><span className="nav-caption">YOUR PROJECTS</span><button className="icon-button" aria-label="Create project" onClick={() => edit('projects')}><Plus size={15}/></button></div><div className="sidebar-projects">{data.projects.filter(p => p.status !== 'archived').slice(0,12).map(p => <button key={p.id} title={p.name} className={`sidebar-project ${p.id === projectId ? 'selected' : ''}`} onClick={() => selectProject(p.id)}><i style={{background:p.color}}/><span>{p.name}</span></button>)}{!data.projects.length && <p className="sidebar-empty">Your projects will feel<br/>right at home here.</p>}</div><div className="sidebar-bottom"><div className="sidebar-note"><Sprout size={22}/><strong>A little progress, every day.</strong><p>You don’t have to do it all.<br/>Just the next right thing.</p></div><button className="nav-link" onClick={() => setSettings(true)}><Settings2 size={18}/> Workspace settings</button><div className="user-profile"><span className="user-avatar">E</span><div><strong>Elliot</strong><span>Personal workspace</span></div><button className="icon-button" aria-label="Sign out" title="Sign out" onClick={logout}><LogOut size={17}/></button></div></div></aside>
+    <div className="main-shell"><header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setSidebar(true)}><Menu size={20}/></button><span>Workspace</span><span className="slash">/</span><strong>{project ? 'Projects' : title}</strong>{project && <><span className="slash">/</span><span className="breadcrumb-project">{project.name}</span></>}</div><div className="topbar-actions"><label className="search-box"><Search size={16}/><input ref={searchRef} aria-label="Search current view" placeholder="Search this view…" value={search} onChange={e => setSearch(e.target.value)}/>{search ? <button className="icon-button" aria-label="Clear search" onClick={() => setSearch('')}><X size={14}/></button> : <kbd>Ctrl K</kbd>}</label><button className="icon-button activity-button" title="Recent activity" aria-label="Recent activity" onClick={() => setShowActivity(true)}><Activity size={19}/></button><span className="topbar-avatar">E</span></div></header>
+      <main className="main-content"><div className="page-heading"><div>{project && <button className="back-link" onClick={() => navigate('projects')}><ArrowLeft size={14}/> All projects</button>}<div className="page-title"><h1>{title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div><p>{project ? project.description || 'A little progress, every day.' : descriptions[view]}</p></div><div className="heading-actions">{project && <button className="button secondary" onClick={() => edit('projects',project)}><Settings2 size={16}/> Edit project</button>}<button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button></div></div>
+      {!online && <div className="error-banner" role="status">You’re offline. Your saved workspace is visible; reconnect to make changes.</div>}
+      {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()} className="text-link">Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
+      {project && <><div className="project-summary"><span><CalendarDays size={15}/>{project.start_date ? formatDate(project.start_date) : 'No start date'} — {project.due_date ? formatDate(project.due_date) : 'No deadline'}</span><span><Check size={15}/>{progress(data.tasks.filter(t => t.project_id === project.id))}% complete</span></div><div className="project-tabs">{[['tasks','Tasks',ListTodo],['knowledge','Knowledge base',BookOpen],['timeline','Timeline',CalendarDays]].map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div></>}
+      {currentView === 'overview' && <Overview {...props}/>}{currentView === 'projects' && <Projects {...props}/>}{currentView === 'tasks' && <Tasks key={`${projectId || 'all'}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{currentView === 'timeline' && <Timeline key={projectId || 'all'} {...props}/>}
+      <footer className="workspace-footer"><span><i className={online && !error ? 'online' : 'offline'}/>{!online ? 'Offline' : error ? 'Sync needs attention' : 'Saved to Supabase'}{lastSync && !error && ` · ${lastSync.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}`}</span><button className="text-link" disabled={loading} onClick={() => refresh()}><RefreshCw size={13} className={loading ? 'spin' : ''}/> Refresh</button></footer>
+      </main></div>
+    {editor && <Editor key={`${editor.type}-${editor.item?.id || 'new'}`} editor={editor} data={data} onSave={save} onDelete={remove} onClose={() => setEditor(null)} onComment={(taskId,content) => save('comments',{task_id:taskId,content})} onDeleteComment={comment => remove('comments',comment)}/>}
+    {settings && <Modal title="Workspace settings" onClose={() => setSettings(false)}><div className="settings-body"><div className="settings-section"><ShieldCheck size={23}/><div><h3>Private, by design</h3><p>Only your existing Supabase app account can access this workspace. This browser stays signed in for up to 90 days. Sign out to lock it sooner.</p></div></div><div className="settings-section"><Download size={23}/><div><h3>A copy of your work</h3><p>Download all projects, tasks, pages, milestones, comments, and activity as a JSON backup.</p><button className="button secondary" onClick={() => { downloadJson(data); setToast('Backup downloaded') }}><Download size={16}/> Export workspace</button></div></div><div className="settings-section"><CircleHelp size={23}/><div><h3>Make yourself at home</h3><p>Drag tasks between board columns or edit their status. Write knowledge pages in Markdown. Use project dates, task dates, and milestones to shape your timeline.</p><p>Assignees are organizational labels in this personal workspace; they do not send invitations or grant access.</p></div></div><button className="button secondary" onClick={logout}><LogOut size={16}/> Sign out of this device</button></div></Modal>}
+    {showActivity && <Modal title="Recent activity" onClose={() => setShowActivity(false)}><div className="activity-list">{data.activity.length ? data.activity.slice(0,60).map(a => <div className="activity-item" key={a.id}><span className="activity-dot"/><div><p><strong>{a.title}</strong> was {a.action}</p><span>{a.entity_type.replace('documents','page')} · {new Date(a.created_at).toLocaleString()}</span></div></div>) : <p className="muted">Your workspace’s story starts with your first project.</p>}</div></Modal>}
+    {toast && <div className="toast" role="status"><Check size={17}/>{toast}</div>}
+  </div>
+}
