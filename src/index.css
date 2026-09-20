@@ -71,3 +71,58 @@ body, .login-page {
 .inline-task input, .inline-task select { width: 100%; min-width: 0; }
 .inline-task-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .inline-task .text-link { text-align: left; }
+
+/* Wider project navigation and a grouped, scrollable Gantt chart. */
+:root { --sidebar-width: 330px; }
+.sidebar { width: var(--sidebar-width); }
+.main-shell { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
+.sidebar-project { align-items: flex-start; line-height: 1.5; }
+.sidebar-project i { margin-top: 8px; }
+.sidebar-project svg { margin-top: 3px; }
+.sidebar-project span { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.sidebar-projects { flex-shrink: 0; }
+.project-tabs { flex-wrap: wrap; }
+.gantt-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 14px; }
+.gantt-scroll { overflow: auto; max-height: 70vh; border: 1px solid var(--border); border-radius: 12px; background: white; }
+.gantt-chart { --label-width: 320px; width: calc(var(--label-width) + var(--chart-width)); }
+.gantt-header, .gantt-row { display: grid; grid-template-columns: var(--label-width) var(--chart-width); }
+.gantt-header { position: sticky; top: 0; z-index: 4; background: #eff5f0; color: #426951; border-bottom: 1px solid var(--border); }
+.gantt-label { position: sticky; left: 0; z-index: 2; display: flex; align-items: center; gap: 5px; padding: 12px; background: #fff; border-right: 1px solid var(--border); min-width: 0; }
+.gantt-header > .gantt-label { background: #eff5f0; font-size: 14px; }
+.gantt-months, .gantt-days { display: flex; }
+.gantt-months span { flex-shrink: 0; overflow: hidden; white-space: nowrap; padding: 9px 6px; border-right: 1px solid var(--border); font-size: 14px; }
+.gantt-days span { flex-shrink: 0; text-align: center; height: 28px; border-right: 1px solid #dae4df; font-size: 14px; }
+.gantt-days .weekend { background: #dce8e1; }
+.gantt-row { min-height: 72px; border-bottom: 1px solid #e4ebe7; }
+.gantt-name { display: flex; align-items: flex-start; gap: 8px; text-align: left; min-width: 0; font-size: 15px; padding: 0; width: 100%; }
+.gantt-name > svg { margin-top: 3px; color: #426951; }
+.gantt-name > span { overflow-wrap: anywhere; min-width: 0; }
+.gantt-name small { display: block; font-size: 14px; margin-top: 6px; color: #65766c; }
+.gantt-row:not(.gantt-summary) .gantt-label { padding-left: 38px; }
+.gantt-summary .gantt-label { background: #eff5f0; }
+.gantt-lane { position: relative; min-height: 72px; background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(var(--day-width) - 1px), #e5ebe7 calc(var(--day-width) - 1px), #e5ebe7 var(--day-width)), repeating-linear-gradient(to right, #f2f5f3 0, #f2f5f3 calc(var(--day-width) * 2), transparent calc(var(--day-width) * 2), transparent var(--week-width)); background-position: 0 0, var(--weekend-offset) 0; }
+.gantt-summary .gantt-lane { background-color: #f7faf8; }
+.gantt-bar { position: absolute; top: 24px; height: 26px; padding: 0; border-radius: 5px; overflow: hidden; background: color-mix(in srgb, var(--project-color), white 75%); color: #20382b; border: 1px solid var(--project-color); text-align: left; }
+.gantt-summary-bar { height: 18px; top: 28px; border-radius: 3px; }
+.gantt-progress { position: absolute; inset: 0 auto 0 0; background: var(--project-color); opacity: .5; }
+.gantt-bar-text { position: relative; display: block; padding: 2px 6px; font-size: 14px; white-space: nowrap; }
+.gantt-summary-bar .gantt-bar-text { line-height: 14px; padding-top: 0; }
+.gantt-milestone { transform: translateX(-50%); border: 0; background: transparent; color: var(--project-color); overflow: visible; }
+.gantt-today { position: absolute; top: 0; bottom: 0; width: 2px; background: #ba6541; z-index: 1; pointer-events: none; }
+.gantt-unscheduled { display: block; padding: 26px 12px; color: #67796d; font-size: 14px; }
+.gantt-hint { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 14px; color: #596b60; margin: 14px 0 24px; }
+.gantt-empty { padding: 28px; }
+@media (max-width: 1200px) { :root { --sidebar-width: 290px; } }
+@media (max-width: 850px) {
+  :root { --sidebar-width: 260px; }
+  .project-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 650px) {
+  .sidebar { width: min(340px, calc(100vw - 36px)); }
+  .main-shell { margin-left: 0; width: 100%; }
+  .gantt-chart { --label-width: 180px; }
+  .gantt-label { padding: 10px 8px; }
+  .gantt-row:not(.gantt-summary) .gantt-label { padding-left: 18px; }
+  .gantt-name { font-size: 14px; }
+  .gantt-header > .gantt-label { letter-spacing: 0; }
+}
