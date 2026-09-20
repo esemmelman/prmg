@@ -131,3 +131,16 @@ body, .login-page {
 .gantt-drop-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: #426951; z-index: 3; pointer-events: none; }
 .gantt-drop-marker span { position: absolute; top: 0; left: 4px; padding: 3px 6px; background: #426951; color: white; border-radius: 4px; white-space: nowrap; font-size: 14px; }
 .gantt-move-status { min-height: 24px; color: #426951; font-size: 14px; margin-bottom: 8px; }
+
+/* Collapsible navigation and clearer project/task hierarchy. */
+.sidebar-hidden .sidebar { transform: translateX(-100%); visibility: hidden; }
+.sidebar-hidden .main-shell { margin-left: 0; width: 100%; }
+.sidebar-toggle { width: 36px; height: 36px; background: #e4eee7; color: #426951; }
+.sidebar-close { display: none; }
+.gantt-row:not(.gantt-summary) .gantt-label { padding-left: 68px; }
+.gantt-row:not(.gantt-summary) .gantt-name { position: relative; }
+.gantt-row:not(.gantt-summary) .gantt-name::before { content: ''; position: absolute; left: -19px; top: -5px; width: 12px; height: 16px; border-left: 2px solid #b4c8bc; border-bottom: 2px solid #b4c8bc; border-radius: 0 0 0 4px; }
+@media (max-width: 650px) {
+  .sidebar-close { display: inline-flex; align-self: flex-end; margin-bottom: 8px; }
+  .gantt-row:not(.gantt-summary) .gantt-label { padding-left: 48px; }
+}
