@@ -233,7 +233,7 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
     return <div className={`gantt-row ${summary ? 'gantt-summary' : ''}`} key={`${item.type}-${item.id}`}>
       <div className="gantt-label">
         {summary && <button className="icon-button" aria-label={`${collapsed.has(project.id) ? 'Expand' : 'Collapse'} ${project.name}`} aria-expanded={!collapsed.has(project.id)} onClick={() => toggleProject(project.id)}>{collapsed.has(project.id) ? <ChevronRight size={17}/> : <ChevronDown size={17}/>}</button>}
-        <button className="gantt-name" {...(!summary ? dragProps(item) : {})} onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : <Circle size={13}/>}<span>{item.title}<small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
+        <button className="gantt-name" {...(!summary ? dragProps(item) : {})} onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : <Circle size={13}/>}<span><span className="gantt-title-text">{item.title}</span><small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
       </div>
       <div className={`gantt-lane ${!summary && visible ? 'gantt-with-balloon' : ''}`} onDragOver={dragOver} onDrop={dropTask}>
         {preview?.id === item.id && <div className="gantt-drop-marker" style={{left: Math.max(0, dayDiff(start, preview.date)) * cellWidth}}><span>{formatDate(preview.date)}</span></div>}

@@ -148,19 +148,19 @@ body, .login-page {
 .gantt-with-balloon { min-height: 100px; }
 .gantt-task-balloon {
   display: block; position: relative; width: max-content; max-width: 280px;
-  margin-top: 10px; margin-bottom: 48px; padding: 8px 12px;
+  margin-top: 46px; margin-bottom: 12px; padding: 8px 12px;
   background: #fff; color: #29372f; border: 1px solid var(--balloon-color);
   border-radius: 10px; box-shadow: 0 3px 10px #29372f12;
   font-size: 15px; line-height: 1.5; text-align: left;
   white-space: normal; overflow-wrap: anywhere; cursor: grab; z-index: 2;
 }
 .gantt-task-balloon::after {
-  content: ''; position: absolute; bottom: -6px; left: min(var(--balloon-tip), calc(100% - 18px));
+  content: ''; position: absolute; top: -6px; left: min(var(--balloon-tip), calc(100% - 18px));
   width: 10px; height: 10px; transform: rotate(45deg); background: white;
-  border-right: 1px solid var(--balloon-color); border-bottom: 1px solid var(--balloon-color);
+  border-left: 1px solid var(--balloon-color); border-top: 1px solid var(--balloon-color);
 }
 .gantt-task-balloon:active { cursor: grabbing; }
-.gantt-with-balloon .gantt-bar { top: auto; bottom: 12px; }
+.gantt-with-balloon .gantt-bar { top: 10px; bottom: auto; }
 
 .inline-task-entry { display: flex; align-items: center; gap: 6px; }
 .inline-task-entry input { flex: 1; min-width: 0; }
@@ -176,3 +176,6 @@ body, .login-page {
 .list-order-row.drop-before::before, .list-order-row.drop-after::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; background: #426951; z-index: 2; pointer-events: none; }
 .list-order-row.drop-before::before { top: -2px; }
 .list-order-row.drop-after::after { bottom: -2px; }
+
+.gantt-row:not(.gantt-summary) .gantt-label { align-items: flex-start; padding-top: 12px; }
+.gantt-row:not(.gantt-summary) .gantt-title-text { display: block; line-height: 22px; }
