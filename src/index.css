@@ -164,3 +164,6 @@ body, .login-page {
 
 .inline-task-entry { display: flex; align-items: center; gap: 6px; }
 .inline-task-entry input { flex: 1; min-width: 0; }
+
+.list-task-entry { margin-bottom: 14px; }
+.list-task-entry > .icon-button { background: #e4eee7; color: #426951; width: 36px; height: 36px; }
