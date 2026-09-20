@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_KEY } from './config'
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { storageKey: 'prmg-auth-v1', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 })
-export const tables = ['projects', 'tasks', 'documents', 'milestones', 'comments', 'activity']
+export const tables = ['projects', 'tasks', 'documents', 'comments', 'activity']
 export const emptyData = Object.fromEntries(tables.map(t => [t, []]))
 
 export async function loadWorkspace() {
@@ -18,7 +18,7 @@ export async function loadWorkspace() {
       hasMore = data.length === 1000
       offset += 1000
     }
-    return [table, rows]
+    return [table, table === 'activity' ? rows.filter(row => tables.includes(row.entity_type)) : rows]
   }))
   return Object.fromEntries(entries)
 }

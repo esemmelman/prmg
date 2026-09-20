@@ -21,7 +21,6 @@ begin
  get diagnostics changed = row_count;
  if changed <> 0 then raise exception 'Stale write not blocked'; end if;
  insert into public.prmg_documents(project_id,title,content) values(project_id,'Temporary page','# Test');
- insert into public.prmg_milestones(project_id,title,due_date) values(project_id,'Temporary milestone',current_date);
  insert into public.prmg_comments(task_id,content) values(task_id,'Temporary comment');
  if not exists(select 1 from public.prmg_activity where entity_id=task_id) then raise exception 'Activity trigger failed'; end if;
  begin

@@ -2,7 +2,7 @@
 
 Live: https://esemmelman.github.io/prmg/
 
-A responsive personal workspace with multiple projects, task boards and lists, priorities, dates, subtasks, comments, Markdown knowledge pages, milestones, a timeline, activity history, search, project archiving, and JSON export.
+A responsive personal workspace with multiple projects, task boards and lists, priorities, dates, subtasks, comments, Markdown knowledge pages, a Gantt chart, activity history, search, project archiving, and JSON export.
 
 ## Local development
 
@@ -18,10 +18,10 @@ The private owners table deliberately has RLS enabled without client policies; o
 
 Schema: `supabase/migrations/20260920144444_create_prmg_workspace.sql`. Saves check `updated_at` to reject stale edits. The workspace refreshes on focus and every minute. Failed saves keep the editor open. Edits require an internet connection.
 
-Assignees are organizational labels, not invitations. Project deletion cascades to its tasks, pages, milestones, and comments; archive to retain them. Settings exports all loaded records as JSON. Import, attachments, reminders, and calendar integrations are not included.
+Assignees are organizational labels, not invitations. Project deletion cascades to its tasks, pages and comments; archive to retain them. Settings exports all loaded records as JSON. Import, attachments, reminders, and calendar integrations are not included.
 
 ## Verification
 
-Run `npx playwright install chromium`, `npm run build`, then `npx playwright test`. Browser tests use a mocked API and verify creation, task completion, subtasks, comments, Markdown preview, milestones, failed-save recovery, export, mobile layout, sign-in errors, and expired sessions.
+Run `npx playwright install chromium`, `npm run build`, then `npx playwright test`. Browser tests use a mocked API and verify creation, task completion, subtasks, comments, Markdown preview, Gantt charts, failed-save recovery, export, mobile layout, sign-in errors, and expired sessions.
 
 `tests/database-security.sql` runs administrator-only transaction tests against Supabase, then rolls back all fixtures. It checks real owner CRUD, activity triggers, optimistic concurrency, date constraints, cascade deletion, session expiry, non-owner isolation, and anonymous denial. No fixtures remain in the live database.

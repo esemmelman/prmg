@@ -4,7 +4,7 @@ import { today, addDays } from '../src/utils.js'
 const owner = 'bdfe3c81-3e96-4928-aa91-dc4ebabb7e87'
 const now = () => new Date().toISOString()
 async function mockWorkspace(page) {
-  const data = { projects: [], tasks: [], documents: [], milestones: [], comments: [], activity: [] }
+  const data = { projects: [], tasks: [], documents: [], comments: [], activity: [] }
   let failSave = false
   const session = { access_token: 'test-only-token', refresh_token: 'test-only-refresh', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now()/1000)+3600, user: { id: owner, email:'test@example.com', aud:'authenticated', role:'authenticated', app_metadata:{},user_metadata:{},created_at:now() } }
   await page.addInitScript(session => localStorage.setItem('prmg-auth-v1',JSON.stringify(session)),session)
@@ -30,12 +30,16 @@ async function mockWorkspace(page) {
   return {data,setFailSave: value => { failSave = value }}
 }
 
-test('project, task, subtask, comment, knowledge page and milestone workflows',async({page}) => {
+test('project, task, subtask, comment, knowledge page and Gantt workflows',async({page}) => {
   const {data,setFailSave} = await mockWorkspace(page)
   const errors=[];page.on('pageerror',error=>errors.push(error.message))
   await page.goto('./')
   await expect(page.getByRole('heading',{name:'Projects',exact:true})).toBeVisible()
-  await page.locator('.page-heading').getByRole('button',{name:'New project',exact:true}).click()
+  await expect(page.getByRole('button',{name:'New project',exact:true})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Refresh',exact:true})).toHaveCount(0)
+  await expect(page.locator('.page-heading p')).toHaveCount(0)
+  await expect(page.locator('.view-toolbar > .muted')).toHaveCount(0)
+  await page.getByRole('button',{name:'Create project',exact:true}).click()
   await page.getByLabel('Project name').fill('Website launch')
   await page.getByLabel('Description',{exact:true}).fill('A clear home for our next launch.')
   await page.getByRole('dialog').getByRole('button',{name:'Create project',exact:true}).click()
@@ -73,13 +77,7 @@ test('project, task, subtask, comment, knowledge page and milestone workflows',a
   await page.getByRole('button',{name:'Create page',exact:true}).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.locator('.project-tabs').getByRole('button',{name:'Gantt chart'}).click()
-  await page.getByRole('button',{name:'New milestone',exact:true}).first().click()
-  await page.getByLabel('Title',{exact:true}).fill('Launch day')
-  await page.getByRole('button',{name:'Create milestone',exact:true}).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.locator('.milestone-list')).toContainText('Launch day')
-  await page.getByRole('button',{name:'Complete Launch day',exact:true}).click()
-  await expect(page.getByRole('button',{name:'Reopen Launch day',exact:true})).toBeVisible()
+  await expect(page.getByRole('region',{name:'Gantt chart',exact:true})).toBeVisible()
   await page.locator('nav').getByRole('button',{name:/^Projects/}).click()
   await page.screenshot({path:'test-results/overview.png',fullPage:true})
   await page.setViewportSize({width:390,height:844})
@@ -92,7 +90,7 @@ test('project, task, subtask, comment, knowledge page and milestone workflows',a
   await page.getByRole('button',{name:'Export workspace',exact:true}).click()
   expect((await download).suggestedFilename()).toMatch(/^prmg-backup/)
   expect(data.projects).toHaveLength(1);expect(data.tasks[0].status).toBe('done');expect(data.tasks[0].checklist[0].done).toBe(true)
-  expect(data.documents).toHaveLength(1);expect(data.milestones[0].completed).toBe(true);expect(data.comments).toHaveLength(1)
+  expect(data.documents).toHaveLength(1);expect(data.comments).toHaveLength(1)
   expect(errors).toEqual([])
 })
 
@@ -156,7 +154,6 @@ test('All Projects combines tasks and grouped Gantt schedules with readable proj
   const names = ['Book Club at Beth David Community Center', 'Hebrew Class at Beth David Congregation', 'Archived reading group']
   data.projects.push(...names.map((name, index) => ({id: randomUUID(), name, status: index === 2 ? 'archived' : 'active', color: ['#49755f','#6883b3','#9474af'][index], created_at: now(), updated_at: now()})))
   data.tasks.push(...data.projects.map((project, index) => ({id: randomUUID(), project_id: project.id, title: ['Choose the next book','Prepare the lesson','Reading notes'][index], status: index === 0 ? 'done' : 'todo', priority: 'medium', start_date: index === 2 ? null : today(), due_date: index === 2 ? null : addDays(today(), 4), checklist: [], labels: [], created_at: now(), updated_at: now()})))
-  data.milestones.push({id: randomUUID(), project_id: data.projects[0].id, title: 'Book discussion', due_date: addDays(today(), 7), completed: false, created_at: now()})
   await page.setViewportSize({width: 1440, height: 1000})
   await page.goto('./')
   await expect(page.locator('.sidebar-projects > button').first()).toHaveText('All Projects')
@@ -174,7 +171,6 @@ test('All Projects combines tasks and grouped Gantt schedules with readable proj
   const chart = page.getByRole('region', {name: 'Gantt chart', exact: true})
   const bar = chart.getByRole('button', {name: 'Edit Choose the next book', exact: true})
   expect((await bar.boundingBox()).width).toBe(180)
-  await expect(chart.locator('.gantt-milestone')).toHaveCount(1)
   await page.screenshot({path:'test-results/gantt-desktop.png', fullPage:true})
   await chart.getByRole('button', {name: `Collapse ${names[0]}`, exact:true}).click()
   await expect(bar).toHaveCount(0)

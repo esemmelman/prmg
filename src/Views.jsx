@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowUpRight, ArrowRight, Plus, MoreHorizontal, CalendarDays, Check, Circle, Flag, BookOpen, Pin, ChevronLeft, ChevronRight, ChevronDown, CheckCheck, FolderOpen, ListTodo, Diamond, MessageSquare, LayoutGrid, List, Clock3, Search } from 'lucide-react'
+import { ArrowUpRight, Plus, MoreHorizontal, CalendarDays, Check, Circle, BookOpen, Pin, ChevronLeft, ChevronRight, ChevronDown, CheckCheck, FolderOpen, MessageSquare, LayoutGrid, List, Search } from 'lucide-react'
 import { TASK_STATUSES, PROJECT_STATUSES, PRIORITIES, today, addDays, dayDiff, dateValue, formatDate, progress, overdue, matches } from './utils'
 
 export function Empty({ icon: Icon = FolderOpen, title, text, action, label }) {
@@ -20,32 +20,10 @@ export function ProjectCard({ project, data, onSelect, onEdit }) {
   </article>
 }
 
-export function Overview({ data, onSelect, onEdit, onNavigate, search }) {
-  const projects = data.projects.filter(p => p.status !== 'archived' && matches(p, search))
-  const ids = new Set(data.projects.filter(p => p.status !== 'archived').map(p => p.id))
-  const tasks = data.tasks.filter(t => ids.has(t.project_id))
-  const open = tasks.filter(t => t.status !== 'done')
-  const due = open.filter(t => t.due_date).sort((a,b) => a.due_date.localeCompare(b.due_date)).slice(0,5)
-  const milestones = data.milestones.filter(m => !m.completed && ids.has(m.project_id)).sort((a,b) => a.due_date.localeCompare(b.due_date)).slice(0,4)
-  return <>
-    <section className="welcome-banner"><div><span className="eyebrow">A LITTLE CLARITY GOES A LONG WAY</span><h2>Make room for your best work.</h2><p>All your projects, plans, and possibilities. One clear view.</p><button className="text-link" onClick={() => onEdit('projects')}>Start a new project <ArrowRight size={16}/></button></div><div className="banner-art" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="art-card"><CheckCheck size={23}/><span/><span/></div><div className="art-dot"/><div className="art-star">✳</div></div></section>
-    <div className="stats-grid">{[
-      ['Active projects', data.projects.filter(p => p.status === 'active').length, FolderOpen, 'Projects moving forward', () => onNavigate('projects')],
-      ['Open tasks', open.length, ListTodo, `${tasks.filter(t => t.status === 'done').length} completed`, () => onNavigate('tasks')],
-      ['Due this week', open.filter(t => t.due_date && t.due_date >= today() && t.due_date <= addDays(today(),7)).length, CalendarDays, 'Over the next 7 days', () => onNavigate('tasks','week')],
-      ['Overdue', open.filter(overdue).length, Clock3, 'A little attention needed', () => onNavigate('tasks','overdue')],
-    ].map(([label, count, Icon, note, click]) => <button className="stat-card" key={label} onClick={click}><span className="stat-label">{label}<Icon size={17}/></span><strong>{count.toString().padStart(2,'0')}</strong><span className="stat-note">{note}</span></button>)}</div>
-    <div className="section-heading"><div><h2>Your projects <span className="count">{projects.length}</span></h2><p>Big ideas, moving one step at a time.</p></div><button className="text-link" onClick={() => onNavigate('projects')}>View all projects <ArrowRight size={16}/></button></div>
-    {projects.length ? <div className="project-grid">{projects.slice(0,6).map(p => <ProjectCard key={p.id} project={p} data={data} onSelect={onSelect} onEdit={onEdit}/>)}</div> : <Empty title={search ? 'No matching projects' : 'Your next chapter starts here'} text={search ? 'Try another search.' : 'Create your first project, then turn the big picture into small, doable steps.'} action={!search ? () => onEdit('projects') : undefined} label="Create a project"/>}
-    <div className="overview-bottom"><section className="panel"><div className="panel-heading"><h2>Coming up</h2><button className="icon-button" aria-label="View all tasks" onClick={() => onNavigate('tasks')}><ArrowUpRight size={18}/></button></div>{due.length ? due.map(task => <button className="upcoming-row" key={task.id} onClick={() => onEdit('tasks',task)}><span className={`task-circle ${task.status}`}><Circle size={17}/></span><div><strong>{task.title}</strong><ProjectName id={task.project_id} projects={data.projects}/></div><span className={overdue(task) ? 'late' : ''}>{formatDate(task.due_date)}</span></button>) : <div className="small-empty"><CalendarDays size={25}/><p>No upcoming deadlines.<br/>Add due dates to see what’s next.</p></div>}</section>
-      <section className="panel"><div className="panel-heading"><h2>Milestones</h2><Flag size={17}/></div>{milestones.length ? milestones.map(m => <button className="upcoming-row" key={m.id} onClick={() => onEdit('milestones',m)}><span className="milestone-icon"><Diamond size={18}/></span><div><strong>{m.title}</strong><ProjectName id={m.project_id} projects={data.projects}/></div><span className={m.due_date < today() ? 'late' : ''}>{formatDate(m.due_date)}</span></button>) : <div className="small-empty"><Flag size={25}/><p>Give your projects a few landmarks.<br/>Add milestones in the Gantt chart.</p></div>}</section></div>
-  </>
-}
-
 export function Projects({ data, search, onEdit, onSelect }) {
   const [status, setStatus] = useState('current')
   const projects = data.projects.filter(p => matches(p,search) && (status === 'all' || status === 'current' ? status === 'all' || p.status !== 'archived' : p.status === status))
-  return <><div className="view-toolbar"><div className="filter-tabs">{[['current','Current'],['active','Active'],['completed','Completed'],['archived','Archived'],['all','All']].map(([key,label]) => <button key={key} className={status === key ? 'selected' : ''} onClick={() => setStatus(key)}>{label}</button>)}</div><span className="muted">{projects.length} projects</span></div>{projects.length ? <div className="project-grid">{projects.map(p => <ProjectCard key={p.id} project={p} data={data} onSelect={onSelect} onEdit={onEdit}/>)}</div> : <Empty title="A clean slate" text="No projects match this view. Start something new or change your filters." action={() => onEdit('projects')} label="New project"/>}</>
+  return <><div className="view-toolbar"><div className="filter-tabs">{[['current','Current'],['active','Active'],['completed','Completed'],['archived','Archived'],['all','All']].map(([key,label]) => <button key={key} className={status === key ? 'selected' : ''} onClick={() => setStatus(key)}>{label}</button>)}</div></div>{projects.length ? <div className="project-grid">{projects.map(p => <ProjectCard key={p.id} project={p} data={data} onSelect={onSelect} onEdit={onEdit}/>)}</div> : <Empty title="A clean slate" text="No projects match this view. Use the + beside Your Projects to create a project, or change your filters."/>}</>
 }
 
 function TaskCard({ task, data, onEdit, onToggle, compact = false }) {
@@ -106,22 +84,20 @@ export function Knowledge({ data, projectId, search, onEdit }) {
   return <><div className="view-toolbar"><div className="filter-tabs"><button className={category === 'All' ? 'selected' : ''} onClick={() => setCategory('All')}>All pages</button>{categories.map(c => <button key={c} className={category === c ? 'selected' : ''} onClick={() => setCategory(c)}>{c}</button>)}</div><span className="muted">{documents.length} pages</span></div>{documents.length ? <div className="document-grid">{documents.map(d => <button key={d.id} className="document-card" onClick={() => onEdit('documents',d)}><div className="document-card-top"><span className="document-icon"><BookOpen size={22}/></span><span className="label">{d.category}</span>{d.pinned && <Pin size={15}/>}</div><h3>{d.title}</h3><p>{d.content.replace(/[#*`>[\]]/g,'').slice(0,155) || 'No content yet.'}</p><div className="document-card-bottom"><ProjectName id={d.project_id} projects={data.projects}/><span>{formatDate(d.updated_at)}</span></div></button>)}</div> : <Empty icon={BookOpen} title="Good ideas deserve a place" text="Keep plans, decisions, research, and meeting notes connected to your projects." action={() => onEdit('documents')} label="Create a page"/>}</>
 }
 
-export function GanttChart({ data, projectId, search, onEdit, onSave, includeArchived = false }) {
+export function GanttChart({ data, projectId, search, onEdit, includeArchived = false }) {
   const [start, setStart] = useState(() => addDays(today(), -3))
   const [days, setDays] = useState(30)
   const [collapsed, setCollapsed] = useState(new Set())
   const end = addDays(start, days - 1)
   const projects = data.projects.filter(p => projectId ? p.id === projectId : includeArchived || p.status !== 'archived')
-  const ids = new Set(projects.map(p => p.id))
   const groups = projects.map(project => {
     const tasks = data.tasks.filter(task => task.project_id === project.id)
-    const children = [...tasks.map(task => ({...task, type: 'tasks'})), ...data.milestones.filter(m => m.project_id === project.id).map(m => ({...m, type: 'milestones'}))]
+    const children = tasks.map(task => ({...task, type: 'tasks'}))
       .filter(item => matches(project, search) || matches(item, search))
       .sort((a, b) => (a.start_date || a.due_date || '9999').localeCompare(b.start_date || b.due_date || '9999'))
     const dates = [project.start_date, project.due_date, ...children.flatMap(item => [item.start_date, item.due_date])].filter(Boolean).sort()
     return {project, children, summary: {...project, type: 'projects', title: project.name, start_date: dates[0] || null, due_date: dates.at(-1) || null, completion: progress(tasks)}}
   }).filter(group => matches(group.project, search) || group.children.length)
-  const milestones = data.milestones.filter(m => ids.has(m.project_id) && matches(m,search)).sort((a,b) => (a.due_date || '').localeCompare(b.due_date || ''))
   const scheduleDates = groups.flatMap(group => [group.summary.start_date, group.summary.due_date]).filter(Boolean).sort()
   function fitSchedule() {
     if (!scheduleDates.length) return
@@ -148,26 +124,25 @@ export function GanttChart({ data, projectId, search, onEdit, onSave, includeArc
     const visible = scheduled && last >= start && first <= end
     const left = visible ? Math.max(0, dayDiff(start, first)) * cellWidth : 0
     const width = visible ? (dayDiff(first < start ? start : first, last > end ? end : last) + 1) * cellWidth : 0
-    const completion = summary ? item.completion : item.status === 'done' || item.completed ? 100 : item.checklist?.length ? Math.round(item.checklist.filter(t => t.done).length / item.checklist.length * 100) : 0
+    const completion = summary ? item.completion : item.status === 'done' ? 100 : item.checklist?.length ? Math.round(item.checklist.filter(t => t.done).length / item.checklist.length * 100) : 0
     const record = summary ? project : item
     const dates = scheduled ? `${formatDate(first, true)} - ${formatDate(last, true)}` : 'Unscheduled'
     return <div className={`gantt-row ${summary ? 'gantt-summary' : ''}`} key={`${item.type}-${item.id}`}>
       <div className="gantt-label">
         {summary && <button className="icon-button" aria-label={`${collapsed.has(project.id) ? 'Expand' : 'Collapse'} ${project.name}`} aria-expanded={!collapsed.has(project.id)} onClick={() => toggleProject(project.id)}>{collapsed.has(project.id) ? <ChevronRight size={17}/> : <ChevronDown size={17}/>}</button>}
-        <button className="gantt-name" onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : item.type === 'milestones' ? <Diamond size={15}/> : <Circle size={13}/>}<span>{item.title}<small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
+        <button className="gantt-name" onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : <Circle size={13}/>}<span>{item.title}<small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
       </div>
       <div className="gantt-lane">
         {today() >= start && today() <= end && <div className="gantt-today" style={{left: (dayDiff(start, today()) + .5) * cellWidth}}/>}
-        {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''} ${item.type === 'milestones' ? 'gantt-milestone' : ''}`} aria-label={`Edit ${item.title}`} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left: item.type === 'milestones' ? left + cellWidth / 2 : left, width: item.type === 'milestones' ? 22 : width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}>{item.type === 'milestones' ? <Diamond size={22} fill="currentColor"/> : <><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : item.title}</span></>}</button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
+        {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : item.title}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
       </div>
     </div>
   }
-  return <><div className="view-toolbar"><div className="gantt-nav"><button className="icon-button" aria-label="Previous period" onClick={() => setStart(addDays(start,-days))}><ChevronLeft size={19}/></button><strong>{formatDate(start)} - {formatDate(end,true)}</strong><button className="icon-button" aria-label="Next period" onClick={() => setStart(addDays(start,days))}><ChevronRight size={19}/></button><button className="button secondary small" onClick={() => setStart(addDays(today(),-3))}>Today</button><button className="button secondary small" disabled={!scheduleDates.length} onClick={fitSchedule}>Fit schedule</button></div><div className="filters"><select aria-label="Gantt chart period" value={days} onChange={e => setDays(Number(e.target.value))}><option value={14}>2 weeks</option><option value={30}>30 days</option><option value={90}>90 days</option>{![14,30,90].includes(days) && <option value={days}>Full schedule · {days} days</option>}</select><button className="button secondary" disabled={!projects.length} onClick={() => onEdit('milestones')}><Flag size={16}/> New milestone</button></div></div>
+  return <><div className="view-toolbar"><div className="gantt-nav"><button className="icon-button" aria-label="Previous period" onClick={() => setStart(addDays(start,-days))}><ChevronLeft size={19}/></button><strong>{formatDate(start)} - {formatDate(end,true)}</strong><button className="icon-button" aria-label="Next period" onClick={() => setStart(addDays(start,days))}><ChevronRight size={19}/></button><button className="button secondary small" onClick={() => setStart(addDays(today(),-3))}>Today</button><button className="button secondary small" disabled={!scheduleDates.length} onClick={fitSchedule}>Fit schedule</button></div><div className="filters"><select aria-label="Gantt chart period" value={days} onChange={e => setDays(Number(e.target.value))}><option value={14}>2 weeks</option><option value={30}>30 days</option><option value={90}>90 days</option>{![14,30,90].includes(days) && <option value={days}>Full schedule · {days} days</option>}</select></div></div>
     <div className="gantt-scroll" role="region" aria-label="Gantt chart" tabIndex={0}><div className="gantt-chart" style={{'--chart-width': `${chartWidth}px`, '--day-width': `${cellWidth}px`, '--week-width': `${cellWidth * 7}px`, '--weekend-offset': `${((6 - dateValue(start).getDay() + 7) % 7) * cellWidth}px`}}>
-      <div className="gantt-header"><div className="gantt-label">PROJECT / TASK / MILESTONE</div><div className="gantt-scale"><div className="gantt-months">{monthBands.map(month => <span key={month.month} style={{width: month.count * cellWidth}}>{dateValue(month.date).toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}</span>)}</div><div className="gantt-days">{Array.from({length: days}, (_, index) => { const date = dateValue(addDays(start, index)); return <span key={index} className={[0,6].includes(date.getDay()) ? 'weekend' : ''} style={{width: cellWidth}}>{days <= 30 || (days <= 90 ? index % 7 === 0 : index % 14 === 0) ? date.getDate() : ''}</span> })}</div></div></div>
+      <div className="gantt-header"><div className="gantt-label">PROJECT / TASK</div><div className="gantt-scale"><div className="gantt-months">{monthBands.map(month => <span key={month.month} style={{width: month.count * cellWidth}}>{dateValue(month.date).toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}</span>)}</div><div className="gantt-days">{Array.from({length: days}, (_, index) => { const date = dateValue(addDays(start, index)); return <span key={index} className={[0,6].includes(date.getDay()) ? 'weekend' : ''} style={{width: cellWidth}}>{days <= 30 || (days <= 90 ? index % 7 === 0 : index % 14 === 0) ? date.getDate() : ''}</span> })}</div></div></div>
       {groups.length ? groups.map(group => <div className="gantt-group" key={group.project.id}>{row(group.summary, group.project, true)}{!collapsed.has(group.project.id) && group.children.map(item => row(item, group.project))}</div>) : <div className="gantt-empty">No projects match this view.</div>}
-    </div></div><p className="gantt-hint"><span className="legend-line"/> Today <span>Bars show duration; darker fill shows completion. Diamonds mark milestones. Click a task or bar to edit its dates.</span></p>
-    <div className="section-heading"><div><h2>Milestones</h2><p>The meaningful moments along the way.</p></div></div>{milestones.length ? <div className="milestone-list">{milestones.map(m => <div className="milestone-row" key={m.id}><button className={`complete-button ${m.completed ? 'checked' : ''}`} aria-label={`${m.completed ? 'Reopen' : 'Complete'} ${m.title}`} onClick={() => onSave('milestones',{completed:!m.completed},m)}>{m.completed && <Check size={13}/>}</button><button className={`task-title ${m.completed ? 'struck' : ''}`} onClick={() => onEdit('milestones',m)}>{m.title}</button><ProjectName id={m.project_id} projects={data.projects}/><span className={!m.completed && m.due_date < today() ? 'late' : 'muted'}>{formatDate(m.due_date,true)}</span></div>)}</div> : <Empty icon={Flag} title="Mark your milestones" text="Set a launch date, a review, or a moment worth celebrating." action={projects.length ? () => onEdit('milestones') : () => onEdit('projects')} label={projects.length ? 'Add milestone' : 'Create project'}/>}
+    </div></div><p className="gantt-hint"><span className="legend-line"/> Today <span>Bars show duration; darker fill shows completion. Click a task or bar to edit its dates.</span></p>
   </>
 }
 
