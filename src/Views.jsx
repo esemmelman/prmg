@@ -57,18 +57,45 @@ function TaskCard({ task, data, onEdit, onToggle, compact = false }) {
   </article>
 }
 
-export function Tasks({ data, projectId, search, onEdit, onSave, initialFilter = 'all' }) {
+function InlineTask({ projects, projectId, status, onCreate, onEdit, onClose }) {
+  const [title, setTitle] = useState('')
+  const [selectedProject, setSelectedProject] = useState(projectId || (projects.length === 1 ? projects[0].id : ''))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  async function submit(event) {
+    event.preventDefault()
+    if (busy || !title.trim() || !selectedProject) return
+    setBusy(true); setError('')
+    try {
+      await onCreate('tasks', { title: title.trim(), project_id: selectedProject, status, priority: 'medium', description: '', assignee: '', start_date: null, due_date: null, labels: [], checklist: [] })
+      onClose()
+    } catch (err) { setError(err.message) }
+    finally { setBusy(false) }
+  }
+  return <form className="inline-task" onSubmit={submit} onKeyDown={event => { if(event.key === 'Escape' && !busy) { event.preventDefault(); onClose() } }}>
+    <fieldset disabled={busy}>
+      <label className="field"><span>Title</span><input autoFocus required maxLength={240} placeholder="What needs to be done?" value={title} onChange={event => setTitle(event.target.value)}/></label>
+      {!projectId && <label className="field"><span>Project</span><select required value={selectedProject} onChange={event => setSelectedProject(event.target.value)}><option value="">Choose a project</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <div className="inline-task-actions"><button className="button primary small" disabled={!title.trim() || !selectedProject || busy}>{busy ? 'Adding...' : 'Add task'}</button><button type="button" className="text-link" onClick={onClose}>Cancel</button></div>
+      <button type="button" className="text-link" onClick={() => { onEdit('tasks', null, { title, status, project_id: selectedProject }); onClose() }}>Open full task form <ArrowUpRight size={15}/></button>
+    </fieldset>
+  </form>
+}
+
+export function Tasks({ data, projectId, search, onEdit, onSave, onCreate, initialFilter = 'all' }) {
   const [layout, setLayout] = useState('board')
   const [priority, setPriority] = useState('all')
   const [dueFilter, setDueFilter] = useState(initialFilter)
   const [projectFilter, setProjectFilter] = useState('all')
   const [sort, setSort] = useState('newest')
   const [dragOver, setDragOver] = useState('')
+  const [adding, setAdding] = useState('')
   const archived = new Set(data.projects.filter(p => p.status === 'archived').map(p => p.id))
   const tasks = data.tasks.filter(t => (!projectId ? !archived.has(t.project_id) : t.project_id === projectId) && (projectFilter === 'all' || t.project_id === projectFilter) && matches(t,search) && (priority === 'all' || priority === t.priority) && (dueFilter === 'all' || dueFilter === 'overdue' && overdue(t) || dueFilter === 'week' && t.status !== 'done' && t.due_date >= today() && t.due_date <= addDays(today(),7) || dueFilter === 'undated' && !t.due_date)).sort((a,b) => sort === 'due' ? (a.due_date || '9999').localeCompare(b.due_date || '9999') : sort === 'priority' ? ['urgent','high','medium','low'].indexOf(a.priority) - ['urgent','high','medium','low'].indexOf(b.priority) : b.created_at.localeCompare(a.created_at))
   const toggle = task => onSave('tasks',{status: task.status === 'done' ? 'todo' : 'done'},task)
   return <><div className="view-toolbar task-toolbar"><div className="filters">{!projectId && <select aria-label="Filter project" value={projectFilter} onChange={e => setProjectFilter(e.target.value)}><option value="all">All projects</option>{data.projects.filter(p => p.status !== 'archived').map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select>}<select aria-label="Filter priority" value={priority} onChange={e => setPriority(e.target.value)}><option value="all">All priorities</option>{Object.entries(PRIORITIES).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select><select aria-label="Filter due date" value={dueFilter} onChange={e => setDueFilter(e.target.value)}><option value="all">Any date</option><option value="week">Due this week</option><option value="overdue">Overdue</option><option value="undated">No due date</option></select><select aria-label="Sort tasks" value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest first</option><option value="due">Due date</option><option value="priority">Priority</option></select></div><div className="segmented"><button className={layout === 'board' ? 'selected' : ''} onClick={() => setLayout('board')}><LayoutGrid size={15}/> Board</button><button className={layout === 'list' ? 'selected' : ''} onClick={() => setLayout('list')}><List size={15}/> List</button></div></div>
-    {!data.projects.length ? <Empty title="Every task needs a home" text="Create a project first, then break your work into tasks." action={() => onEdit('projects')} label="Create a project"/> : layout === 'board' ? <div className="kanban">{Object.entries(TASK_STATUSES).map(([key,label]) => <section key={key} className={`kanban-column ${dragOver === key ? 'drag-over' : ''}`} onDragOver={e => { e.preventDefault(); setDragOver(key) }} onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver('') }} onDrop={e => { e.preventDefault(); setDragOver(''); const task = data.tasks.find(t => t.id === e.dataTransfer.getData('text/plain')); if(task && task.status !== key) onSave('tasks',{status:key},task) }}><div className="column-heading"><span className={`status-dot ${key}`}/><h3>{label}</h3><span>{tasks.filter(t => t.status === key).length}</span><button className="icon-button" aria-label={`Add task to ${label}`} onClick={() => onEdit('tasks',null,{status:key})}><Plus size={17}/></button></div><div className="column-tasks">{tasks.filter(t => t.status === key).map(task => <TaskCard key={task.id} task={task} data={data} onEdit={onEdit} onToggle={toggle}/>)}<button className="add-task" onClick={() => onEdit('tasks',null,{status:key})}><Plus size={15}/> Add task</button></div></section>)}</div> : tasks.length ? <div className="task-list">{tasks.map(t => <TaskCard key={t.id} task={t} data={data} onEdit={onEdit} onToggle={toggle} compact/>)}</div> : <Empty icon={Search} title="No tasks in this view" text="Try different filters or add a task." action={() => onEdit('tasks')} label="New task"/>}
+    {!data.projects.length ? <Empty title="Every task needs a home" text="Create a project first, then break your work into tasks." action={() => onEdit('projects')} label="Create a project"/> : layout === 'board' ? <div className="kanban">{Object.entries(TASK_STATUSES).map(([key,label]) => <section key={key} className={`kanban-column ${dragOver === key ? 'drag-over' : ''}`} onDragOver={e => { e.preventDefault(); setDragOver(key) }} onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver('') }} onDrop={e => { e.preventDefault(); setDragOver(''); const task = data.tasks.find(t => t.id === e.dataTransfer.getData('text/plain')); if(task && task.status !== key) onSave('tasks',{status:key},task) }}><div className="column-heading"><span className={`status-dot ${key}`}/><h3>{label}</h3><span>{tasks.filter(t => t.status === key).length}</span><button className="icon-button" aria-label={`Add task to ${label}`} onClick={() => setAdding(key)}><Plus size={17}/></button></div><div className="column-tasks">{tasks.filter(t => t.status === key).map(task => <TaskCard key={task.id} task={task} data={data} onEdit={onEdit} onToggle={toggle}/>)}{adding === key ? <InlineTask key={`${key}-${projectFilter}`} projects={data.projects.filter(p => p.status !== 'archived' || p.id === projectId)} projectId={projectId || (projectFilter === 'all' ? null : projectFilter)} status={key} onCreate={onCreate} onEdit={onEdit} onClose={() => setAdding('')}/> : <button className="add-task" onClick={() => setAdding(key)}><Plus size={15}/> Add task</button>}</div></section>)}</div> : tasks.length ? <div className="task-list">{tasks.map(t => <TaskCard key={t.id} task={t} data={data} onEdit={onEdit} onToggle={toggle} compact/>)}</div> : <Empty icon={Search} title="No tasks in this view" text="Try different filters or add a task." action={() => onEdit('tasks')} label="New task"/>}
   </>
 }
 

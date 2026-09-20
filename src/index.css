@@ -65,3 +65,9 @@ body, .login-page {
 .topbar-start { display: flex; align-items: center; gap: 12px; }
 .app-version { color: #426951; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .workspace-switch { margin-top: 0; }
+
+.inline-task { background: white; border: 1px solid var(--border); border-radius: 9px; padding: 12px; }
+.inline-task fieldset { padding: 0; display: grid; gap: 14px; }
+.inline-task input, .inline-task select { width: 100%; min-width: 0; }
+.inline-task-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.inline-task .text-link { text-align: left; }
