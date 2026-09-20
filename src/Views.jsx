@@ -177,6 +177,7 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
     const visible = scheduled && last >= start && first <= end
     const left = visible ? Math.max(0, dayDiff(start, first)) * cellWidth : 0
     const width = visible ? (dayDiff(first < start ? start : first, last > end ? end : last) + 1) * cellWidth : 0
+    const bubbleLeft = Math.max(8, Math.min(left, chartWidth - 288))
     const completion = summary ? item.completion : item.status === 'done' ? 100 : item.checklist?.length ? Math.round(item.checklist.filter(t => t.done).length / item.checklist.length * 100) : 0
     const record = summary ? project : item
     const dates = scheduled ? `${formatDate(first, true)} - ${formatDate(last, true)}` : 'Unscheduled'
@@ -185,10 +186,11 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
         {summary && <button className="icon-button" aria-label={`${collapsed.has(project.id) ? 'Expand' : 'Collapse'} ${project.name}`} aria-expanded={!collapsed.has(project.id)} onClick={() => toggleProject(project.id)}>{collapsed.has(project.id) ? <ChevronRight size={17}/> : <ChevronDown size={17}/>}</button>}
         <button className="gantt-name" {...(!summary ? dragProps(item) : {})} onClick={() => onEdit(item.type, record)}>{summary ? <FolderOpen size={17}/> : <Circle size={13}/>}<span>{item.title}<small>{dates}{summary ? ` · ${completion}% complete` : ''}</small></span></button>
       </div>
-      <div className="gantt-lane" onDragOver={dragOver} onDrop={dropTask}>
+      <div className={`gantt-lane ${!summary && visible ? 'gantt-with-balloon' : ''}`} onDragOver={dragOver} onDrop={dropTask}>
         {preview?.id === item.id && <div className="gantt-drop-marker" style={{left: Math.max(0, dayDiff(start, preview.date)) * cellWidth}}><span>{formatDate(preview.date)}</span></div>}
         {today() >= start && today() <= end && <div className="gantt-today" style={{left: (dayDiff(start, today()) + .5) * cellWidth}}/>}
-        {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} {...(!summary ? dragProps(item, true) : {})} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : item.title}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
+        {visible && !summary && <button className="gantt-task-balloon" {...dragProps(item)} style={{marginLeft: bubbleLeft, '--balloon-color': project.color || '#49755f', '--balloon-tip': `${Math.max(14, Math.min(260, left - bubbleLeft + 12))}px`}} onClick={() => onEdit(item.type, record)}>{item.title}</button>}
+        {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} {...(!summary ? dragProps(item, true) : {})} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : ''}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
       </div>
     </div>
   }

@@ -144,3 +144,21 @@ body, .login-page {
   .sidebar-close { display: inline-flex; align-self: flex-end; margin-bottom: 8px; }
   .gantt-row:not(.gantt-summary) .gantt-label { padding-left: 48px; }
 }
+
+/* Keep full task names readable without changing the duration bars. */
+.gantt-with-balloon { min-height: 100px; }
+.gantt-task-balloon {
+  display: block; position: relative; width: max-content; max-width: 280px;
+  margin-top: 10px; margin-bottom: 48px; padding: 8px 12px;
+  background: #fff; color: #29372f; border: 1px solid var(--balloon-color);
+  border-radius: 10px; box-shadow: 0 3px 10px #29372f12;
+  font-size: 15px; line-height: 1.5; text-align: left;
+  white-space: normal; overflow-wrap: anywhere; cursor: grab; z-index: 2;
+}
+.gantt-task-balloon::after {
+  content: ''; position: absolute; bottom: -6px; left: min(var(--balloon-tip), calc(100% - 18px));
+  width: 10px; height: 10px; transform: rotate(45deg); background: white;
+  border-right: 1px solid var(--balloon-color); border-bottom: 1px solid var(--balloon-color);
+}
+.gantt-task-balloon:active { cursor: grabbing; }
+.gantt-with-balloon .gantt-bar { top: auto; bottom: 12px; }
