@@ -61,3 +61,7 @@ body, .login-page {
   .section-heading .text-link { max-width: none; text-align: left; }
   .form-grid { grid-template-columns: 1fr; }
 }
+
+.topbar-start { display: flex; align-items: center; gap: 12px; }
+.app-version { color: #426951; font-size: 14px; font-weight: 700; white-space: nowrap; }
+.workspace-switch { margin-top: 0; }
