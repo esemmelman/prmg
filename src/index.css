@@ -179,3 +179,50 @@ body, .login-page {
 
 .gantt-row:not(.gantt-summary) .gantt-label { align-items: flex-start; padding-top: 12px; }
 .gantt-row:not(.gantt-summary) .gantt-title-text { display: block; line-height: 22px; }
+
+/* Compact workspace spacing while retaining the larger, bold typography. */
+.topbar { height: 44px; padding: 0 24px; }
+.main-content { padding: 14px 24px 12px; }
+.sidebar { padding-top: 10px; }
+.sidebar-close { display: inline-flex; align-self: flex-end; margin: 0; width: 30px; height: 30px; background: #e4eee7; color: #426951; }
+.sidebar nav { margin-top: 3px; gap: 2px; }
+.nav-link { padding-top: 8px; padding-bottom: 8px; }
+.sidebar-project { padding-top: 6px; padding-bottom: 6px; }
+.sidebar-projects-heading { margin-top: 18px; }
+.sidebar-bottom { padding-top: 14px; }
+.user-profile { padding-top: 12px; padding-bottom: 12px; }
+.page-heading { margin-bottom: 14px; gap: 12px; }
+.page-heading h1 { margin-bottom: 3px; }
+.page-heading p { line-height: 1.4; }
+.page-heading p:empty { display: none; }
+.view-toolbar { margin-bottom: 12px; gap: 8px; }
+.section-heading { margin: 16px 0 10px; }
+.project-summary { margin-bottom: 8px; }
+.project-tabs { margin-bottom: 12px; }
+.project-tabs button { padding-top: 8px; padding-bottom: 8px; }
+.task-list, .column-tasks { gap: 6px; }
+.task-row { padding: 8px 12px; gap: 3px 12px; }
+.task-card:not(.task-row) { padding: 12px; }
+.task-meta, .task-extras { gap: 6px; }
+.task-row .task-meta { margin-top: 0; }
+.list-task-entry { margin-bottom: 8px; }
+.project-card { padding: 14px; }
+.project-card-top { margin-bottom: 10px; }
+.project-description { margin: 6px 0 12px; min-height: 0; }
+.project-card-footer { margin-top: 10px; }
+.gantt-move-status:empty { display: none; }
+.gantt-row, .gantt-lane { min-height: 60px; }
+.gantt-label { padding-top: 8px; padding-bottom: 8px; }
+.gantt-name small { margin-top: 3px; }
+.gantt-with-balloon { min-height: 88px; }
+.gantt-task-balloon { margin-top: 42px; margin-bottom: 8px; padding: 6px 10px; line-height: 1.35; }
+.gantt-hint { margin: 8px 0 12px; }
+.workspace-footer { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 14px; padding-top: 8px; }
+.editor-body { gap: 12px; }
+@media (max-width: 650px) {
+  .topbar { height: 42px; padding: 0 12px; }
+  .main-content { padding: 12px; }
+  .page-heading { margin-bottom: 12px; gap: 10px; }
+  .sidebar-close { margin-bottom: 0; }
+  .task-row { padding: 8px 10px; }
+}
