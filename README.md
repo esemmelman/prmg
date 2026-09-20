@@ -2,7 +2,7 @@
 
 Live: https://esemmelman.github.io/prmg/
 
-A responsive personal workspace with multiple projects, task boards and lists, priorities, dates, subtasks, comments, Markdown knowledge pages, a Gantt chart, activity history, search, project archiving, and JSON export.
+A responsive personal workspace with multiple projects, task boards and lists with saved drag ordering, priorities, dates, subtasks, comments, Markdown knowledge pages, a Gantt chart, activity history, search, project archiving, and JSON export.
 
 ## Local development
 
@@ -16,7 +16,7 @@ Sign in with the existing owner's Supabase **app account password**, not the Sup
 
 The private owners table deliberately has RLS enabled without client policies; only the narrowly scoped private session-check function reads it. This is an intentional deny-by-default design, which the database advisor reports as informational: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
 
-Schema: `supabase/migrations/20260920144444_create_prmg_workspace.sql`. Saves check `updated_at` to reject stale edits. The workspace refreshes on focus and every minute. Failed saves keep the editor open. Edits require an internet connection.
+Schema migrations are in `supabase/migrations/`. Task lists open in Manual order; drag a row or its grip handle to rearrange tasks. Alt + Up/Down on a handle also moves a task. Order is saved to Supabase. Saves check `updated_at` to reject stale edits. The workspace refreshes on focus and every minute. Failed saves keep the editor open. Edits require an internet connection.
 
 Assignees are organizational labels, not invitations. Project deletion cascades to its tasks, pages and comments; archive to retain them. Settings exports all loaded records as JSON. Import, attachments, reminders, and calendar integrations are not included.
 

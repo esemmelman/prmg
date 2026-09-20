@@ -42,3 +42,8 @@ export async function removeRecord(table, original) {
   if (error) throw error
   return data
 }
+
+export async function reorderTask(taskId, targetId, after) {
+  const {error} = await supabase.rpc('prmg_reorder_task', {p_task_id:taskId, p_target_id:targetId, p_after:after})
+  if(error) throw error
+}

@@ -10,7 +10,7 @@ begin
 end $$;
 set local role authenticated;
 do $$
-declare project_id uuid; task_id uuid; original_stamp timestamptz; new_stamp timestamptz; changed integer;
+declare project_id uuid; task_id uuid; second_task_id uuid; original_stamp timestamptz; new_stamp timestamptz; changed integer;
 begin
  if not public.prmg_session_valid() then raise exception 'Owner session rejected'; end if;
  insert into public.prmg_projects(name) values('Temporary verification project') returning id into project_id;
@@ -20,6 +20,12 @@ begin
  update public.prmg_tasks set status='todo' where id=task_id and updated_at=original_stamp;
  get diagnostics changed = row_count;
  if changed <> 0 then raise exception 'Stale write not blocked'; end if;
+ insert into public.prmg_tasks(project_id,title) values(project_id,'Second ordering task') returning id into second_task_id;
+ perform public.prmg_reorder_task(second_task_id,task_id,false);
+ if (select sort_order from public.prmg_tasks where id=second_task_id) >= (select sort_order from public.prmg_tasks where id=task_id) then raise exception 'Move before failed'; end if;
+ perform public.prmg_reorder_task(second_task_id,task_id,true);
+ if (select sort_order from public.prmg_tasks where id=second_task_id) <= (select sort_order from public.prmg_tasks where id=task_id) then raise exception 'Move after failed'; end if;
+ if (select status from public.prmg_tasks where id=task_id) <> 'done' then raise exception 'Reorder changed task status'; end if;
  insert into public.prmg_documents(project_id,title,content) values(project_id,'Temporary page','# Test');
  insert into public.prmg_comments(task_id,content) values(task_id,'Temporary comment');
  if not exists(select 1 from public.prmg_activity where entity_id=task_id) then raise exception 'Activity trigger failed'; end if;
@@ -37,6 +43,11 @@ set local role authenticated;
 do $$
 begin
  if public.prmg_session_valid() then raise exception 'Expired session accepted'; end if;
+ begin
+  perform public.prmg_reorder_task(gen_random_uuid(),gen_random_uuid(),false);
+  raise exception 'Expired session can reorder';
+ exception when insufficient_privilege then null;
+ end;
  if exists(select 1 from public.prmg_activity) then raise exception 'Expired session can read'; end if;
  begin
   insert into public.prmg_projects(name) values('Must fail');

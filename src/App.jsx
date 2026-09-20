@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FolderOpen, LayoutGrid, ListTodo, BookOpen, CalendarDays, Search, Plus, ArrowLeft, Settings2, LogOut, LockKeyhole, ArrowRight, LoaderCircle, ChevronLeft, ChevronRight, X, Download, ShieldCheck, CircleHelp, Sprout, Activity, Check } from 'lucide-react'
-import { supabase, loadWorkspace, saveRecord, removeRecord, emptyData } from './data'
+import { supabase, loadWorkspace, saveRecord, removeRecord, reorderTask, emptyData } from './data'
 import { OWNER_ID, LOGIN_EMAIL } from './config'
 import { version } from '../package.json'
 import { PROJECT_STATUSES, progress, downloadJson, formatDate } from './utils'
@@ -126,6 +126,17 @@ export default function App() {
       return row
     } finally { mutationBusy.current = false }
   }
+  async function reorder(taskId, targetId, after) {
+    if(mutationBusy.current) throw new Error('Another change is saving. Please try again in a moment.')
+    if(!navigator.onLine) throw new Error('Reconnect to save the task order.')
+    mutationBusy.current = true
+    requestCounter.current++
+    try {
+      await reorderTask(taskId, targetId, after)
+      await refresh(true)
+      setToast('Task order saved')
+    } finally { mutationBusy.current = false }
+  }
   async function quickSave(type, values, item) { try { await save(type,values,item) } catch(err) { setError(err.message) } }
   async function remove(type,item) {
     if(mutationBusy.current) throw new Error('Another change is saving. Please try again in a moment.')
@@ -145,7 +156,7 @@ export default function App() {
   const title = project?.name || (allProjects ? 'All Projects' : '') || nav.find(n => n[0] === view)?.[1] || 'Overview'
   const createType = {overview:'projects',projects:'projects',tasks:'tasks',knowledge:'documents'}[currentView]
   const createLabel = {projects:'New project',tasks:'New task',documents:'New page'}[createType]
-  const props = {data,search,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,projectId,includeArchived:allProjects}
+  const props = {data,search,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,onReorder:reorder,projectId,includeArchived:allProjects}
 
   if(!authReady) return <div className="app-loading"><Sprout size={30}/><p>Opening your workspace…</p></div>
   if(!session) return <Login onLogin={login} error={authError} busy={loginBusy}/>
