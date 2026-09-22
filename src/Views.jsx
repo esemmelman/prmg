@@ -312,7 +312,7 @@ export function GanttChart({ data, projectId, search, onEdit, onReorder, onCreat
     const visible = scheduled && last >= start && first <= end
     const left = visible ? Math.max(0, dayDiff(start, first)) * cellWidth : 0
     const width = visible ? (dayDiff(first < start ? start : first, last > end ? end : last) + 1) * cellWidth : 0
-    const bubbleLeft = Math.max(8, Math.min(left, chartWidth - 288))
+    const bubbleLeft = left + width + 8
     const completion = summary ? item.completion : item.status === 'done' ? 100 : item.checklist?.length ? Math.round(item.checklist.filter(t => t.done).length / item.checklist.length * 100) : 0
     const record = summary ? project : item
     const startsIn = displayed.start_date ? dayDiff(today(), displayed.start_date) : null
@@ -329,9 +329,9 @@ export function GanttChart({ data, projectId, search, onEdit, onReorder, onCreat
       <div style={{'--task-color': barColor}} className={`gantt-lane ${!summary && visible ? 'gantt-with-balloon' : ''}`} onDragOver={dragOver} onDrop={dropTask}>
         {preview?.id === item.id && <div className="gantt-drop-marker" style={{left: Math.max(0, dayDiff(start, preview.date)) * cellWidth}}><span>{formatDate(preview.date)}</span></div>}
         {today() >= start && today() <= end && <div className="gantt-today" style={{left: (dayDiff(start, today()) + .5) * cellWidth}}/>}
-        {visible && !summary && <button className="gantt-task-balloon" {...dragProps(item)} style={{marginLeft: bubbleLeft, '--balloon-color': barColor, '--balloon-tip': `${Math.max(14, Math.min(260, left - bubbleLeft + 12))}px`}} onClick={() => onEdit(item.type, record)}>{item.title}</button>}
+        {visible && !summary && <button className="gantt-task-balloon" {...dragProps(item)} style={{marginLeft: bubbleLeft, '--balloon-color': barColor}} onClick={() => onEdit(item.type, record)}>{item.title}</button>}
         {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} {...(!summary ? dragProps(item, true) : {})} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': barColor}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : ''}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
-        {visible && !summary && <>{first >= start && <button className="gantt-resize-handle" aria-label={`Change start date for ${item.title}`} title={`Start date: ${formatDate(first, true)}`} style={{left, width: Math.min(10, width / 2)}} {...resizeProps(item, 'start_date')}/ >}{last <= end && <button className="gantt-resize-handle" aria-label={`Change end date for ${item.title}`} title={`End date: ${formatDate(last, true)}`} style={{left: left + width - Math.min(10, width / 2), width: Math.min(10, width / 2)}} {...resizeProps(item, 'due_date')}/>}</>}
+        {visible && !summary && <>{first >= start && <button className="gantt-resize-handle" aria-label={`Change start date for ${item.title}`} title={`Start date: ${formatDate(first, true)}`} style={{left, width: Math.min(3, width / 2)}} {...resizeProps(item, 'start_date')}/ >}{last <= end && <button className="gantt-resize-handle" aria-label={`Change end date for ${item.title}`} title={`End date: ${formatDate(last, true)}`} style={{left: left + width - Math.min(3, width / 2), width: Math.min(3, width / 2)}} {...resizeProps(item, 'due_date')}/>}</>}
       </div>
     </div>
   }

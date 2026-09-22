@@ -258,3 +258,9 @@ body, .login-page {
 .gantt-status-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .gantt-status-legend i { width: 12px; height: 12px; border-radius: 3px; }
 @media (max-width: 650px) { .gantt-order-handle { left: 10px; } }
+
+/* Compact bar handles and task labels beside the duration bars. */
+.gantt-resize-handle { top: 16px; height: 14px; border-radius: 2px; }
+.gantt-with-balloon { min-height: 60px; }
+.gantt-task-balloon { margin-top: 10px; margin-bottom: 8px; padding: 4px 7px; font-size: 12px; line-height: 1.4; min-height: 26px; }
+.gantt-task-balloon::after { top: 8px; left: -4px; width: 6px; height: 6px; border-left: 1px solid var(--balloon-color); border-top: 0; border-bottom: 1px solid var(--balloon-color); }
