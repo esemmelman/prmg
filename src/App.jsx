@@ -28,6 +28,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [view, setView] = useState('blank')
   const [projectId, setProjectId] = useState(null)
+  const [taskFocusRequest, setTaskFocusRequest] = useState(0)
   const [projectTab, setProjectTab] = useState('tasks')
   const [taskFilter, setTaskFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -106,7 +107,7 @@ export default function App() {
     setSession(null); setSettings(false); setShowActivity(false); setAuthError(''); setSearch('')
   }
   function navigate(next, filter = 'all') { setView(next); setProjectId(null); setTaskFilter(filter); setSearch(''); closeMobileSidebar() }
-  function selectProject(id) { setProjectId(id); setView('project'); setProjectTab('tasks'); setSearch(''); closeMobileSidebar() }
+  function selectProject(id) { setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setProjectTab('tasks'); setSearch(''); closeMobileSidebar() }
   function edit(type, item = null, defaults = {}) {
     if(!online) { setError('You’re offline. Reconnect before making changes.'); return }
     if(type === 'tasks' && !data.projects.length) { setToast('Create a project first.'); type = 'projects'; item = null }
@@ -155,7 +156,7 @@ export default function App() {
   const title = project?.name || (allProjects ? 'All Projects' : '') || nav.find(n => n[0] === view)?.[1] || (view === 'projects' ? 'Projects' : '')
   const createType = {overview:'projects',projects:'projects',tasks:'tasks',knowledge:'documents'}[currentView]
   const createLabel = {projects:'New project',tasks:'New task',documents:'New page'}[createType]
-  const props = {data,search,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,onReorder:reorder,projectId,includeArchived:allProjects}
+  const props = {data,search,taskFocusRequest,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,onReorder:reorder,projectId,includeArchived:allProjects}
 
   if(!authReady) return <div className="app-loading"><Sprout size={30}/><p>Opening your workspace…</p></div>
   if(!session) return <Login onLogin={login} error={authError} busy={loginBusy}/>
@@ -168,7 +169,7 @@ export default function App() {
       {!online && <div className="error-banner" role="status">You’re offline. Your saved workspace is visible; reconnect to make changes.</div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()} className="text-link">Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
       {project && <><div className="project-summary"><span><CalendarDays size={15}/>{project.start_date ? formatDate(project.start_date) : 'No start date'} — {project.due_date ? formatDate(project.due_date) : 'No deadline'}</span><span><Check size={15}/>{progress(data.tasks.filter(t => t.project_id === project.id))}% complete</span></div></>}
-      {(project || allProjects) && <div className="project-tabs">{[['tasks','Tasks',ListTodo],...(!allProjects ? [['knowledge','Knowledge base',BookOpen]] : []),['gantt','Gantt chart',CalendarDays]].map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
+      {(project || allProjects) && <div className="project-tabs">{[['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],...(!allProjects ? [['knowledge','Knowledge base',BookOpen]] : [])].map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
       {currentView === 'projects' && <Projects {...props}/>}{currentView === 'tasks' && <Tasks key={`${projectId || view}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{currentView === 'gantt' && <GanttChart key={projectId || 'all'} {...props}/>}
 
       </main></div>
