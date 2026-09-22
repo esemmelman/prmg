@@ -7,7 +7,7 @@ import { PROJECT_STATUSES, progress, downloadJson, formatDate } from './utils'
 import { Editor, Modal } from './Editor'
 import { Projects, Tasks, Knowledge, GanttChart, Badge } from './Views'
 
-const nav = [ ['projects','Projects',FolderOpen], ['tasks','Tasks',ListTodo], ['knowledge','Knowledge base',BookOpen], ['gantt','Gantt chart',CalendarDays] ]
+const nav = [ ['gantt','Gantt chart',CalendarDays], ['tasks','Tasks',ListTodo], ['knowledge','Knowledge base',BookOpen] ]
 const descriptions = { overview: 'A little perspective for everything you’re working on.', tasks: 'Small steps. Meaningful progress.', knowledge: 'Everything you know, right where you need it.', gantt: 'Plan projects and tasks on one schedule.', allProjects: 'Tasks and schedules across all your projects.' }
 
 function Login({ onLogin, error, busy }) {
@@ -26,7 +26,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState('')
-  const [view, setView] = useState('projects')
+  const [view, setView] = useState('blank')
   const [projectId, setProjectId] = useState(null)
   const [projectTab, setProjectTab] = useState('tasks')
   const [taskFilter, setTaskFilter] = useState('all')
@@ -36,7 +36,6 @@ export default function App() {
   const [showActivity, setShowActivity] = useState(false)
   const [sidebar, setSidebar] = useState(() => window.matchMedia('(min-width: 651px)').matches)
   const [toast, setToast] = useState('')
-  const [lastSync, setLastSync] = useState(null)
   const [online, setOnline] = useState(navigator.onLine)
   useEffect(() => {
     const desktop = window.matchMedia('(min-width: 651px)')
@@ -73,14 +72,14 @@ export default function App() {
       }
       const next = await loadWorkspace()
       if (request !== requestCounter.current || !sessionRef.current) return
-      setData(next); setVerified(true); setLoaded(true); setLastSync(new Date()); setError('')
+      setData(next); setVerified(true); setLoaded(true); setError('')
     } catch(err) { if(request === requestCounter.current) setError(err.message || 'Could not reach your workspace. Please retry.') }
     finally { if(request === requestCounter.current) setLoading(false) }
   }, [])
 
   useEffect(() => {
     if(session) refresh()
-    else { requestCounter.current++; setData(emptyData); setVerified(false); setLoaded(false); setEditor(null); setLoading(false); setError(''); setProjectId(null); setView('projects') }
+    else { requestCounter.current++; setData(emptyData); setVerified(false); setLoaded(false); setEditor(null); setLoading(false); setError(''); setProjectId(null); setView('blank') }
   }, [session, refresh])
   /* oxlint-enable react/set-state-in-effect */
 
@@ -153,7 +152,7 @@ export default function App() {
   const project = data.projects.find(p => p.id === projectId)
   const allProjects = view === 'allProjects'
   const currentView = projectId || allProjects ? projectTab : view
-  const title = project?.name || (allProjects ? 'All Projects' : '') || nav.find(n => n[0] === view)?.[1] || 'Overview'
+  const title = project?.name || (allProjects ? 'All Projects' : '') || nav.find(n => n[0] === view)?.[1] || (view === 'projects' ? 'Projects' : '')
   const createType = {overview:'projects',projects:'projects',tasks:'tasks',knowledge:'documents'}[currentView]
   const createLabel = {projects:'New project',tasks:'New task',documents:'New page'}[createType]
   const props = {data,search,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,onReorder:reorder,projectId,includeArchived:allProjects}
@@ -163,15 +162,15 @@ export default function App() {
   if(!verified || !loaded) return <div className="app-loading"><Sprout size={30}/><h2>{error ? 'Your workspace couldn’t load' : 'Making room for good work…'}</h2>{error ? <><p role="alert">{error}</p><button className="button primary" onClick={() => refresh()}>Try again</button><button className="button secondary" onClick={logout}>Back to sign in</button></> : <LoaderCircle className="spin" size={20}/>}</div>
   return <div className={`app-shell ${sidebar ? 'sidebar-visible' : 'sidebar-hidden'}`}>
     {sidebar && <button className="sidebar-overlay" aria-label="Close navigation" onClick={() => setSidebar(false)}/>}
-    <aside id="workspace-sidebar" className={`sidebar ${sidebar ? 'open' : ''}`} inert={!sidebar}><button className="icon-button sidebar-close" aria-label="Hide navigation" title="Hide sidebar" aria-expanded={sidebar} aria-controls="workspace-sidebar" onClick={() => setSidebar(false)}><ChevronLeft size={20}/></button><nav>{nav.map(([key,label,Icon]) => <button key={key} className={`nav-link ${view === key || key === 'projects' && projectId ? 'active' : ''}`} onClick={() => navigate(key)}><Icon size={18}/><span>{label}</span>{key === 'projects' && <small>{data.projects.filter(p => p.status !== 'archived').length}</small>}</button>)}</nav><div className="sidebar-projects-heading"><span className="nav-caption">YOUR PROJECTS</span><button className="icon-button" aria-label="Create project" onClick={() => edit('projects')}><Plus size={15}/></button></div><div className="sidebar-projects"><button className={`sidebar-project ${allProjects ? 'selected' : ''}`} onClick={() => { navigate('allProjects'); setProjectTab('tasks') }}><LayoutGrid size={17}/><span>All Projects</span></button>{data.projects.filter(p => p.status !== 'archived').map(p => <button key={p.id} title={p.name} className={`sidebar-project ${p.id === projectId ? 'selected' : ''}`} onClick={() => selectProject(p.id)}><i style={{background:p.color}}/><span>{p.name}</span></button>)}{!data.projects.length && <p className="sidebar-empty">Your projects will feel<br/>right at home here.</p>}</div><div className="sidebar-bottom"><button className="nav-link" onClick={() => setSettings(true)}><Settings2 size={18}/> Workspace settings</button><div className="user-profile"><span className="user-avatar">E</span><div><strong>Elliot</strong><span>Personal workspace</span></div><button className="icon-button" aria-label="Sign out" title="Sign out" onClick={logout}><LogOut size={17}/></button></div></div></aside>
+    <aside id="workspace-sidebar" className={`sidebar ${sidebar ? 'open' : ''}`} inert={!sidebar}><button className="icon-button sidebar-close" aria-label="Hide navigation" title="Hide sidebar" aria-expanded={sidebar} aria-controls="workspace-sidebar" onClick={() => setSidebar(false)}><ChevronLeft size={20}/></button><div className="sidebar-projects-heading"><span className="nav-caption">Your Projects</span><button className="icon-button" aria-label="Create project" onClick={() => edit('projects')}><Plus size={15}/></button></div><div className="sidebar-projects"><button className={`sidebar-project ${allProjects ? 'selected' : ''}`} onClick={() => { navigate('allProjects'); setProjectTab('tasks') }}><LayoutGrid size={17}/><span>All Projects</span></button>{data.projects.filter(p => p.status !== 'archived').map(p => <button key={p.id} title={p.name} className={`sidebar-project ${p.id === projectId ? 'selected' : ''}`} onClick={() => selectProject(p.id)}><i style={{background:p.color}}/><span>{p.name}</span></button>)}{!data.projects.length && <p className="sidebar-empty">Your projects will feel<br/>right at home here.</p>}</div><nav className="workspace-nav" aria-label="Workspace">{nav.map(([key,label,Icon]) => <button key={key} className={`nav-link ${view === key ? 'active' : ''}`} onClick={() => navigate(key)}><Icon size={18}/><span>{label}</span></button>)}</nav><div className="sidebar-bottom"><button className="nav-link" onClick={() => setSettings(true)}><Settings2 size={18}/> Workspace settings</button><div className="app-version sidebar-version">v{version}</div><div className="user-profile"><span className="user-avatar">E</span><div><strong>Elliot</strong><span>Personal workspace</span></div><button className="icon-button" aria-label="Sign out" title="Sign out" onClick={logout}><LogOut size={17}/></button></div></div></aside>
     <div className="main-shell"><header className="topbar"><div className="topbar-start">{!sidebar && <button className="icon-button sidebar-toggle" aria-label="Open navigation" title="Show sidebar" aria-expanded={sidebar} aria-controls="workspace-sidebar" onClick={() => setSidebar(true)}><ChevronRight size={20}/></button>}</div><div className="topbar-actions"><label className="search-box"><Search size={16}/><input ref={searchRef} aria-label="Search current view" value={search} onChange={e => setSearch(e.target.value)}/>{search ? <button className="icon-button" aria-label="Clear search" onClick={() => setSearch('')}><X size={14}/></button> : <kbd>Ctrl K</kbd>}</label><button className="icon-button activity-button" title="Recent activity" aria-label="Recent activity" onClick={() => setShowActivity(true)}><Activity size={19}/></button><span className="topbar-avatar">E</span></div></header>
-      <main className="main-content" aria-busy={loading}><div className="page-heading"><div><div className="page-title"><h1>{title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div>{(project || descriptions[view]) && <p>{project ? project.description || '' : descriptions[view]}</p>}</div><div className="heading-actions">{project && <button className="button secondary" onClick={() => edit('projects',project)}><Settings2 size={16}/> Edit project</button>}{createType === 'documents' && <button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button>}</div></div>
+      <main className="main-content" aria-busy={loading}>{view !== 'blank' && <div className="page-heading"><div><div className="page-title"><h1>{title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div>{(project || descriptions[view]) && <p>{project ? project.description || '' : descriptions[view]}</p>}</div><div className="heading-actions">{project && <button className="button secondary" onClick={() => edit('projects',project)}><Settings2 size={16}/> Edit project</button>}{createType === 'documents' && <button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button>}</div></div>}
       {!online && <div className="error-banner" role="status">You’re offline. Your saved workspace is visible; reconnect to make changes.</div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()} className="text-link">Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
       {project && <><div className="project-summary"><span><CalendarDays size={15}/>{project.start_date ? formatDate(project.start_date) : 'No start date'} — {project.due_date ? formatDate(project.due_date) : 'No deadline'}</span><span><Check size={15}/>{progress(data.tasks.filter(t => t.project_id === project.id))}% complete</span></div></>}
       {(project || allProjects) && <div className="project-tabs">{[['tasks','Tasks',ListTodo],...(!allProjects ? [['knowledge','Knowledge base',BookOpen]] : []),['gantt','Gantt chart',CalendarDays]].map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
       {currentView === 'projects' && <Projects {...props}/>}{currentView === 'tasks' && <Tasks key={`${projectId || view}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{currentView === 'gantt' && <GanttChart key={projectId || 'all'} {...props}/>}
-      <footer className="workspace-footer"><span><i className={online && !error ? 'online' : 'offline'}/>{!online ? 'Offline' : error ? 'Sync needs attention' : 'Saved to Supabase'}{lastSync && !error && ` · ${lastSync.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}`}</span><span className="app-version">v{version}</span></footer>
+
       </main></div>
     {editor && <Editor key={`${editor.type}-${editor.item?.id || 'new'}`} editor={editor} data={data} onSave={save} onDelete={remove} onClose={() => setEditor(null)} onComment={(taskId,content) => save('comments',{task_id:taskId,content})} onDeleteComment={comment => remove('comments',comment)}/>}
     {settings && <Modal title="Workspace settings" onClose={() => setSettings(false)}><div className="settings-body"><div className="settings-section"><ShieldCheck size={23}/><div><h3>Private, by design</h3><p>Only your existing Supabase app account can access this workspace. This browser stays signed in for up to 90 days. Sign out to lock it sooner.</p></div></div><div className="settings-section"><Download size={23}/><div><h3>A copy of your work</h3><p>Download all projects, tasks, pages, comments, and activity as a JSON backup.</p><button className="button secondary" onClick={() => { downloadJson(data); setToast('Backup downloaded') }}><Download size={16}/> Export workspace</button></div></div><div className="settings-section"><CircleHelp size={23}/><div><h3>Make yourself at home</h3><p>Drag tasks between board columns or edit their status. Write knowledge pages in Markdown. Use project dates, and task dates to plan your Gantt chart.</p><p>Assignees are organizational labels in this personal workspace; they do not send invitations or grant access.</p></div></div><button className="button secondary" onClick={logout}><LogOut size={16}/> Sign out of this device</button></div></Modal>}

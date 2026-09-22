@@ -226,3 +226,9 @@ body, .login-page {
   .sidebar-close { margin-bottom: 0; }
   .task-row { padding: 8px 10px; }
 }
+
+/* Project list above the workspace views. */
+.sidebar .sidebar-projects-heading { margin-top: 0; flex-shrink: 0; }
+.sidebar .sidebar-projects { flex-shrink: 1; }
+.workspace-nav { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; flex-shrink: 0; }
+.sidebar-version { padding: 4px 12px 0; }
