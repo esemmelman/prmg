@@ -138,7 +138,6 @@ body, .login-page {
 .sidebar-close { display: none; }
 .gantt-row:not(.gantt-summary) .gantt-label { padding-left: 68px; }
 .gantt-row:not(.gantt-summary) .gantt-name { position: relative; }
-.gantt-row:not(.gantt-summary) .gantt-name::before { content: ''; position: absolute; left: -19px; top: -5px; width: 12px; height: 16px; border-left: 2px solid #b4c8bc; border-bottom: 2px solid #b4c8bc; border-radius: 0 0 0 4px; }
 @media (max-width: 650px) {
   .sidebar-close { display: inline-flex; align-self: flex-end; margin-bottom: 8px; }
   .gantt-row:not(.gantt-summary) .gantt-label { padding-left: 48px; }
@@ -242,3 +241,5 @@ body, .login-page {
 .inline-task-date { flex: 0 0 155px; display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
 .inline-task-entry .inline-task-date input { width: 100%; }
 .inline-task-entry:has(.inline-task-date) { align-items: flex-end; }
+
+.list-task-entry { margin-top: 8px; margin-bottom: 0; }
