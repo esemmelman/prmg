@@ -247,3 +247,14 @@ body, .login-page {
 .gantt-resize-handle { position: absolute; top: 10px; height: 26px; padding: 0; z-index: 3; cursor: ew-resize; touch-action: none; background: #42695166; border-radius: 3px; }
 .gantt-resize-handle:hover, .gantt-resize-handle:focus-visible { background: #426951; }
 .gantt-weekdays span { height: 22px; line-height: 22px; }
+
+.gantt-order-handle { position: absolute; left: 30px; top: 9px; cursor: grab; }
+.gantt-row.order-before .gantt-label, .gantt-row.order-before .gantt-lane { box-shadow: inset 0 3px #426951; }
+.gantt-row.order-after .gantt-label, .gantt-row.order-after .gantt-lane { box-shadow: inset 0 -3px #426951; }
+.gantt-name .gantt-duration { margin-top: 3px; font-size: 12px; }
+.gantt-resize-handle { background: color-mix(in srgb, var(--task-color), transparent 35%); }
+.gantt-resize-handle:hover, .gantt-resize-handle:focus-visible { background: var(--task-color); }
+.gantt-status-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 13px; }
+.gantt-status-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.gantt-status-legend i { width: 12px; height: 12px; border-radius: 3px; }
+@media (max-width: 650px) { .gantt-order-handle { left: 10px; } }
