@@ -232,3 +232,9 @@ body, .login-page {
 .sidebar .sidebar-projects { flex-shrink: 1; }
 .workspace-nav { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; flex-shrink: 0; }
 .sidebar-version { padding: 4px 12px 0; }
+
+.main-shell, .main-content { background: #fff; }
+.inline-task-entry { flex-wrap: wrap; }
+.inline-task-entry input[aria-label="Title"] { flex: 1 1 180px; min-width: 0; }
+.inline-task-entry input[type="date"] { flex: 0 1 165px; width: 165px; }
+.inline-task-entry select { flex: 0 1 auto; }
