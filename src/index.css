@@ -229,7 +229,7 @@ body, .login-page {
 /* Project list above the workspace views. */
 .sidebar .sidebar-projects-heading { margin-top: 0; flex-shrink: 0; }
 .sidebar .sidebar-projects { flex-shrink: 1; }
-.workspace-nav { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; flex-shrink: 0; }
+.sidebar .workspace-nav { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 12px; flex-shrink: 0; }
 .sidebar-version { padding: 4px 12px 0; }
 
 :root, body, .app-shell, .main-shell, .main-content, .sidebar, .topbar, .login-page, .login-card { background: #fff; }
