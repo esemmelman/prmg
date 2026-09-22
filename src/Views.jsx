@@ -143,6 +143,8 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
   const [start, setStart] = useState(() => addDays(today(), -3))
   const [days, setDays] = useState(30)
   const [collapsed, setCollapsed] = useState(new Set())
+  const resize = useRef(null)
+  const [resizePreview, setResizePreview] = useState(null)
   const drag = useRef(null)
   const [preview, setPreview] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -217,6 +219,54 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
     return {draggable: !saving, onDragStart: event => beginDrag(event, item, fromBar), onDragEnd: () => { drag.current = null; setPreview(null) }, onKeyDown: event => keyboardMove(event, item), 'aria-describedby': 'gantt-drag-help'}
   }
 
+  async function resizeTask(item, edge, date) {
+    const first = item.start_date || item.due_date
+    const last = item.due_date || item.start_date
+    const next = edge === 'start_date' ? (date > last ? last : date) : (date < first ? first : date)
+    if(next === item[edge] || saving) return
+    setSaving(true); setMoveError('')
+    try { await saveDates('tasks', {[edge]: next}, item) }
+    catch(error) { setMoveError(`Could not resize ${item.title}: ${error.message}`) }
+    finally { setSaving(false) }
+  }
+  function resizeProps(item, edge) {
+    return {
+      disabled: saving,
+      onClick: event => event.stopPropagation(),
+      onPointerDown: event => {
+        if(saving || event.button !== 0 || !event.isPrimary) return
+        event.preventDefault(); event.stopPropagation()
+        event.currentTarget.focus()
+        const date = item[edge] || item.start_date || item.due_date
+        resize.current = {item, edge, date, origin: date, x: event.clientX}
+        event.currentTarget.setPointerCapture(event.pointerId)
+        setMoveError('')
+      },
+      onPointerMove: event => {
+        const current = resize.current
+        if(!current) return
+        const date = addDays(current.origin, Math.round((event.clientX - current.x) / cellWidth))
+        const first = item.start_date || item.due_date, last = item.due_date || item.start_date
+        current.date = edge === 'start_date' ? (date > last ? last : date) : (date < first ? first : date)
+        setResizePreview({id: item.id, [edge]: current.date})
+      },
+      onPointerUp: event => {
+        const current = resize.current
+        resize.current = null; setResizePreview(null)
+        if(event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+        if(current && current.date !== current.origin) void resizeTask(current.item, current.edge, current.date)
+      },
+      onPointerCancel: () => { resize.current = null; setResizePreview(null) },
+      onLostPointerCapture: () => { resize.current = null; setResizePreview(null) },
+      onKeyDown: event => {
+        if(event.key === 'Escape') { resize.current = null; setResizePreview(null); return }
+        if(!['ArrowLeft','ArrowRight'].includes(event.key) || saving) return
+        event.preventDefault()
+        void resizeTask(item, edge, addDays(item[edge] || item.start_date || item.due_date, event.key === 'ArrowRight' ? 1 : -1))
+      }
+    }
+  }
+
   const monthBands = []
   for (let index = 0; index < days; index++) {
     const date = addDays(start, index)
@@ -226,8 +276,9 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
     else monthBands.push({month, date, count: 1})
   }
   function row(item, project, summary = false) {
-    const first = item.start_date || item.due_date
-    const last = item.due_date || item.start_date
+    const displayed = resizePreview?.id === item.id ? {...item, ...resizePreview} : item
+    const first = displayed.start_date || displayed.due_date
+    const last = displayed.due_date || displayed.start_date
     const scheduled = Boolean(first && last)
     const visible = scheduled && last >= start && first <= end
     const left = visible ? Math.max(0, dayDiff(start, first)) * cellWidth : 0
@@ -246,14 +297,15 @@ export function GanttChart({ data, projectId, search, onEdit, onCreate: saveDate
         {today() >= start && today() <= end && <div className="gantt-today" style={{left: (dayDiff(start, today()) + .5) * cellWidth}}/>}
         {visible && !summary && <button className="gantt-task-balloon" {...dragProps(item)} style={{marginLeft: bubbleLeft, '--balloon-color': project.color || '#49755f', '--balloon-tip': `${Math.max(14, Math.min(260, left - bubbleLeft + 12))}px`}} onClick={() => onEdit(item.type, record)}>{item.title}</button>}
         {visible ? <button className={`gantt-bar ${summary ? 'gantt-summary-bar' : ''}`} aria-label={`Edit ${item.title}`} {...(!summary ? dragProps(item, true) : {})} title={`${item.title}: ${dates} · ${completion}% complete`} style={{left, width, '--project-color': project.color || '#49755f'}} onClick={() => onEdit(item.type, record)}><><span className="gantt-progress" style={{width: `${completion}%`}}/><span className="gantt-bar-text">{summary ? `${completion}%` : ''}</span></></button> : <span className="gantt-unscheduled">{scheduled ? 'Outside this period' : 'Add dates to schedule'}</span>}
+        {visible && !summary && <>{first >= start && <button className="gantt-resize-handle" aria-label={`Change start date for ${item.title}`} title={`Start date: ${formatDate(first, true)}`} style={{left, width: Math.min(10, width / 2)}} {...resizeProps(item, 'start_date')}/ >}{last <= end && <button className="gantt-resize-handle" aria-label={`Change end date for ${item.title}`} title={`End date: ${formatDate(last, true)}`} style={{left: left + width - Math.min(10, width / 2), width: Math.min(10, width / 2)}} {...resizeProps(item, 'due_date')}/>}</>}
       </div>
     </div>
   }
   return <>{moveError && <div className="error-banner" role="alert">{moveError}</div>}<div className="gantt-move-status" role="status">{saving ? 'Saving new dates...' : preview ? `Move ${preview.title} to ${formatDate(preview.date, true)}` : ''}</div><div className="view-toolbar"><div className="gantt-nav"><button className="icon-button" aria-label="Previous period" onClick={() => setStart(addDays(start,-days))}><ChevronLeft size={19}/></button><strong>{formatDate(start)} - {formatDate(end,true)}</strong><button className="icon-button" aria-label="Next period" onClick={() => setStart(addDays(start,days))}><ChevronRight size={19}/></button><button className="button secondary small" onClick={() => setStart(addDays(today(),-3))}>Today</button><button className="button secondary small" disabled={!scheduleDates.length} onClick={fitSchedule}>Fit schedule</button></div><div className="filters"><select aria-label="Gantt chart period" value={days} onChange={e => setDays(Number(e.target.value))}><option value={14}>2 weeks</option><option value={30}>30 days</option><option value={90}>90 days</option><option value={120}>120 days</option><option value={150}>150 days</option>{![14,30,90,120,150].includes(days) && <option value={days}>Full schedule · {days} days</option>}</select></div></div>
     <div className="gantt-scroll" role="region" aria-label="Gantt chart" tabIndex={0}><div className="gantt-chart" style={{'--chart-width': `${chartWidth}px`, '--day-width': `${cellWidth}px`, '--week-width': `${cellWidth * 7}px`, '--weekend-offset': `${((6 - dateValue(start).getDay() + 7) % 7) * cellWidth}px`}}>
-      <div className="gantt-header"><div className="gantt-label">PROJECT / TASK</div><div className="gantt-scale"><div className="gantt-months">{monthBands.map(month => <span key={month.month} style={{width: month.count * cellWidth}}>{dateValue(month.date).toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}</span>)}</div><div className="gantt-days">{Array.from({length: days}, (_, index) => { const date = dateValue(addDays(start, index)); return <span key={index} className={[0,6].includes(date.getDay()) ? 'weekend' : ''} style={{width: cellWidth}}>{days <= 30 || (days <= 90 ? index % 7 === 0 : index % 14 === 0) ? date.getDate() : ''}</span> })}</div></div></div>
+      <div className="gantt-header"><div className="gantt-label">PROJECT / TASK</div><div className="gantt-scale"><div className="gantt-months">{monthBands.map(month => <span key={month.month} style={{width: month.count * cellWidth}}>{dateValue(month.date).toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}</span>)}</div><div className="gantt-days gantt-weekdays">{Array.from({length: days}, (_, index) => { const date = dateValue(addDays(start, index)); return <span key={index} className={[0,6].includes(date.getDay()) ? 'weekend' : ''} style={{width: cellWidth, fontSize: cellWidth < 18 ? 9 : 14}} title={date.toLocaleDateString(undefined, {weekday: 'long'})}>{'SMTWTFS'[date.getDay()]}</span> })}</div><div className="gantt-days">{Array.from({length: days}, (_, index) => { const date = dateValue(addDays(start, index)); return <span key={index} className={[0,6].includes(date.getDay()) ? 'weekend' : ''} style={{width: cellWidth}}>{days <= 30 || (days <= 90 ? index % 7 === 0 : index % 14 === 0) ? date.getDate() : ''}</span> })}</div></div></div>
       {groups.length ? groups.map(group => <div className="gantt-group" key={group.project.id}>{row(group.summary, group.project, true)}{!collapsed.has(group.project.id) && group.children.map(item => row(item, group.project))}</div>) : <div className="gantt-empty">No projects match this view.</div>}
-    </div></div><p className="gantt-hint" id="gantt-drag-help"><span className="legend-line"/> Today <span>Bars show duration; darker fill shows completion. Drag a task title or bar to a date to reschedule it. Duration stays the same. Click to edit, or focus a task and press Alt + Left/Right to move it one day.</span></p>
+    </div></div><p className="gantt-hint" id="gantt-drag-help"><span className="legend-line"/> Today <span>Bars show duration; darker fill shows completion. Drag a task title or bar to a date to reschedule it. Drag either end of a task bar to change its start or end date; focus an end handle and press Left/Right to adjust one day. Click to edit, or focus a task and press Alt + Left/Right to move it one day.</span></p>
   </>
 }
 
