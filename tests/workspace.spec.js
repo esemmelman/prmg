@@ -39,6 +39,24 @@ async function mockWorkspace(page) {
   return {data,setFailSave: value => { failSave = value }}
 }
 
+test('subtasks appear on list and board cards and open the task editor', async ({page}) => {
+  const {data} = await mockWorkspace(page)
+  data.projects.push({id:randomUUID(),name:'Garden',status:'active',color:'#426951',created_at:now(),updated_at:now()})
+  data.tasks.push({id:randomUUID(),project_id:data.projects[0].id,title:'Front sprinklers not working',status:'todo',priority:'medium',labels:[],checklist:[{id:randomUUID(),text:'Check water supply',done:false},{id:randomUUID(),text:'Inspect timer',done:true}],created_at:now(),updated_at:now()})
+  await page.goto('./')
+  await page.locator('.sidebar-project').filter({hasText:'Garden'}).click()
+  for (const layout of ['List','Board']) {
+    await page.getByRole('button',{name:layout,exact:true}).click()
+    const subtasks = page.getByRole('list',{name:'Subtasks for Front sprinklers not working'})
+    await expect(subtasks.getByRole('button',{name:'Check water supply',exact:true})).toBeVisible()
+    await expect(subtasks.getByRole('button',{name:'Inspect timer',exact:true})).toHaveClass('struck')
+    await expect(page.locator('.task-extras')).toContainText('1/2')
+  }
+  await page.getByRole('button',{name:'Check water supply',exact:true}).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByRole('dialog').locator('.checklist')).toContainText('Check water supply')
+})
+
 test('project, task, subtask, comment, knowledge page and Gantt workflows',async({page}) => {
   const {data,setFailSave} = await mockWorkspace(page)
   const errors=[];page.on('pageerror',error=>errors.push(error.message))
