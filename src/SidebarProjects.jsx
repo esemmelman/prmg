@@ -1,4 +1,4 @@
-import { Circle, CheckCircle2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { TASK_STATUSES } from './utils'
 
 export function SidebarProjects({ projects, tasks, projectId, onSelect, onEdit }) {
@@ -12,7 +12,6 @@ export function SidebarProjects({ projects, tasks, projectId, onSelect, onEdit }
       <ul className="sidebar-task-list">
         {tasks.filter(task => task.project_id === project.id).sort((a,b) => a.sort_order == null && b.sort_order == null ? b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id) : a.sort_order == null ? -1 : b.sort_order == null ? 1 : a.sort_order - b.sort_order).map(task => <li key={task.id}>
           <button className={`sidebar-task ${task.status === 'done' ? 'completed' : ''}`} aria-label={`Edit task: ${task.title}`} title={`${task.title} · ${TASK_STATUSES[task.status] || task.status}`} onClick={() => onEdit('tasks', task)}>
-            {task.status === 'done' ? <CheckCircle2 size={12}/> : <Circle size={12}/>}
             <span>{task.title}</span>
           </button>
         </li>)}
