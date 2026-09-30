@@ -275,9 +275,8 @@ body, .login-page {
 .sidebar-project-heading { display: flex; align-items: center; gap: 2px; }
 .sidebar-project-heading .sidebar-project { flex: 1; min-width: 0; padding: 4px 8px; line-height: 20px; }
 .sidebar-project-heading .icon-button { width: 26px; height: 26px; }
-.sidebar-task-list { list-style: none; margin: 0; padding: 0 0 0 18px; }
+.sidebar-task-list { list-style: none; margin: 0; padding: 0 0 0 36px; }
 .sidebar-task { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 6px; border-radius: 4px; text-align: left; font-size: 13px; line-height: 18px; }
 .sidebar-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sidebar-task svg { color: var(--muted); }
 .sidebar-task:hover { background: #f0f3eb; }
 .sidebar-task.completed span { color: var(--muted); text-decoration: line-through; }
