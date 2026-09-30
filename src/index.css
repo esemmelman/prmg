@@ -280,3 +280,18 @@ body, .login-page {
 .sidebar-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-task:hover { background: #f0f3eb; }
 .sidebar-task.completed span { color: var(--muted); text-decoration: line-through; }
+
+.task-grid-scroll { overflow: auto; max-height: 65vh; border: 1px solid #d7ded7; background: white; }
+.task-grid { width: 100%; min-width: 940px; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.task-grid th, .task-grid td { border-right: 1px solid #e1e6e1; border-bottom: 1px solid #e1e6e1; padding: 0; text-align: left; }
+.task-grid thead th { position: sticky; top: 0; z-index: 1; background: #f1f4f0; padding: 7px 9px; white-space: nowrap; font-weight: 700; }
+.task-grid tbody th { width: 36px; padding: 5px 8px; text-align: center; background: #f7f8f6; color: var(--muted); font-weight: 400; }
+.task-grid td:nth-child(2) { min-width: 220px; }
+.task-grid input, .task-grid select { display: block; width: 100%; min-width: 105px; height: 32px; padding: 4px 8px; border: 0; border-radius: 0; background: transparent; font-size: 13px; font-weight: 400; }
+.task-grid input[type=date] { min-width: 132px; }
+.task-grid input:focus, .task-grid select:focus { outline: 2px solid #426951; outline-offset: -2px; background: #f7fbf7; }
+.task-grid tbody tr:hover { background: #fafcf9; }
+.task-grid .grid-project { padding: 4px 8px; min-width: 120px; }
+.task-grid .grid-cell-error { background: #fff1ef; }
+.grid-cell-message { display: block; padding: 4px 8px; color: #a33b30; font-size: 12px; }
+.grid-empty { padding: 12px; margin: 0; font-size: 13px; color: var(--muted); }
