@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Children, cloneElement, useEffect, useId, useRef, useState } from 'react'
 import { X, Trash2, Plus, Check, Send, Eye, Pencil, BookOpen } from 'lucide-react'
 import Markdown from 'react-markdown'
 import { COLORS, TASK_STATUSES, PROJECT_STATUSES, PRIORITIES, formatDate } from './utils'
@@ -21,7 +21,7 @@ export function Modal({ title, children, onClose, wide = false }) {
   </dialog>
 }
 
-function Field({ label, children, className = '' }) { return <label className={`field ${className}`}><span>{label}</span>{children}</label> }
+function Field({ label, children, className = '' }) { const id = useId(); return <label className={`field ${className}`}><span id={id}>{label}</span>{Children.map(children, child => ['input','select','textarea'].includes(child?.type) ? cloneElement(child, {'aria-labelledby': id}) : child)}</label> }
 function SelectOptions({ values }) { return Object.entries(values).map(([key, value]) => <option key={key} value={key}>{value}</option>) }
 
 export function Editor({ editor, data, onSave, onDelete, onClose, onComment, onDeleteComment }) {
@@ -36,44 +36,84 @@ export function Editor({ editor, data, onSave, onDelete, onClose, onComment, onD
   }))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [preview, setPreview] = useState(Boolean(item && type === 'documents'))
+  const [preview, setPreview] = useState(false)
   const [subtask, setSubtask] = useState('')
   const [comment, setComment] = useState('')
   const [commentBusy, setCommentBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const update = (key, value) => setValues(v => ({ ...v, [key]: value }))
+  const [record, setRecord] = useState(item)
+  const recordRef = useRef(item)
+  const valuesRef = useRef(values)
   const dirty = useRef(false)
-  function close() {
-    if (busy || commentBusy) return
-    if (dirty.current && !window.confirm('Discard your unsaved changes?')) return
-    onClose()
+  const inFlight = useRef(null)
+  const formRef = useRef(null)
+  const saveRef = useRef(null)
+  const update = (key, value) => {
+    const next = {...valuesRef.current, [key]: value}
+    valuesRef.current = next; dirty.current = true; setValues(next)
   }
-  async function submit(event) {
-    event.preventDefault(); setError(''); setBusy(true)
+  async function persist(report = false) {
+    if(inFlight.current) {
+      const success = await inFlight.current
+      return success ? persist(report) : false
+    }
+    if(!dirty.current) return true
+    if(!formRef.current?.checkValidity()) {
+      if(report) formRef.current?.reportValidity()
+      return false
+    }
+    const snapshot = valuesRef.current
     const fields = {
       projects: ['name','description','status','color','start_date','due_date'],
       tasks: ['project_id','title','description','status','priority','assignee','start_date','due_date','labels','checklist'],
       documents: ['project_id','title','content','category','pinned'],
     }[type]
-    const payload = Object.fromEntries(fields.map(key => [key, ['project_id','start_date','due_date'].includes(key) ? values[key] || null : typeof values[key] === 'string' ? values[key].trim() : values[key]]))
-    if (payload.start_date && payload.due_date && payload.due_date < payload.start_date) { setError('The due date must be on or after the start date.'); setBusy(false); return }
-    try { await onSave(type, payload, item); dirty.current = false; onClose() }
-    catch (err) { setError(err.message) }
-    finally { setBusy(false) }
-  }
-  async function deleteItem() {
+    const payload = Object.fromEntries(fields.map(key => [key, ['project_id','start_date','due_date'].includes(key) ? snapshot[key] || null : typeof snapshot[key] === 'string' ? snapshot[key].trim() : snapshot[key]]))
+    if(!(payload.name || payload.title) || type === 'documents' && !payload.category || type === 'tasks' && !payload.project_id) {
+      if(report) setError('Complete the required fields before closing.')
+      return false
+    }
+    if(payload.start_date && payload.due_date && payload.due_date < payload.start_date) { setError('The due date must be on or after the start date.'); return false }
     setBusy(true); setError('')
-    try { await onDelete(type, item); onClose() } catch (err) { setError(err.message); setConfirmDelete(false) } finally { setBusy(false) }
+    const operation = (async () => {
+      try {
+        const saved = await onSave(type, payload, recordRef.current)
+        recordRef.current = saved; setRecord(saved)
+        if(valuesRef.current === snapshot) dirty.current = false
+        return true
+      } catch(err) { setError(err.message); return false }
+      finally { setBusy(false) }
+    })()
+    inFlight.current = operation
+    const success = await operation
+    inFlight.current = null
+    return success && dirty.current ? persist(report) : success
   }
-  const title = item ? `${type === 'documents' && preview ? 'Knowledge base' : 'Edit ' + singular}` : `New ${singular}`
+  useEffect(() => { saveRef.current = persist })
+  useEffect(() => {
+    if(!dirty.current) return
+    const timer = setTimeout(() => { void saveRef.current() }, 700)
+    return () => clearTimeout(timer)
+  }, [values])
+  async function close() {
+    if(commentBusy) return
+    if(await persist(true)) onClose()
+  }
+  function submit(event) { event.preventDefault(); void persist(true) }
+  async function deleteItem() {
+    if(!await persist(true)) return
+    setBusy(true); setError('')
+    try { await onDelete(type, recordRef.current); onClose() } catch (err) { setError(err.message); setConfirmDelete(false) } finally { setBusy(false) }
+  }
+  const title = record ? {projects:'Project',tasks:'Task',documents:'Knowledge base'}[type] : `New ${singular}`
   return <Modal title={title} onClose={close} wide={type === 'documents' || type === 'tasks'}>
-    <form onSubmit={submit} onChange={() => { dirty.current = true }}>
-      <fieldset disabled={busy} className="editor-body">
+    <form ref={formRef} onSubmit={submit}>
+      <fieldset disabled={confirmDelete} className="editor-body">
         {type === 'documents' && <div className="segmented editor-tabs"><button type="button" className={!preview ? 'selected' : ''} onClick={() => setPreview(false)}><Pencil size={15}/> Write</button><button type="button" className={preview ? 'selected' : ''} onClick={() => setPreview(true)}><Eye size={15}/> Preview</button></div>}
         {type === 'documents' && preview ? <article className="markdown document-preview"><div className="eyebrow"><BookOpen size={14}/> {values.category}</div><h1>{values.title || 'Untitled page'}</h1><Markdown>{values.content || '*No content yet. Switch to Write to start your page.*'}</Markdown></article> : <>
           <Field label={type === 'projects' ? 'Project name' : 'Title'}><input autoFocus required maxLength={type === 'projects' ? 160 : 240} value={type === 'projects' ? values.name : values.title} onChange={e => update(type === 'projects' ? 'name' : 'title', e.target.value)}/></Field>
           {type !== 'projects' && <Field label="Project"><select required={type !== 'documents'} value={values.project_id || ''} onChange={e => update('project_id', e.target.value)}>{type === 'documents' && <option value="">Workspace · all projects</option>}{data.projects.map(p => <option key={p.id} value={p.id}>{p.name}{p.status === 'archived' ? ' (archived)' : ''}</option>)}</select></Field>}
-          <Field label={type === 'documents' ? 'Content · Markdown supported' : 'Description'}><textarea rows={type === 'documents' ? 14 : 3} maxLength={type === 'documents' ? 200000 : type === 'tasks' ? 50000 : 20000} value={type === 'documents' ? values.content : values.description} onChange={e => update(type === 'documents' ? 'content' : 'description', e.target.value)}/></Field>
+          <Field label={type === 'documents' ? 'Content · Markdown supported' : 'Description'}><textarea aria-label={type === 'documents' ? 'Content · Markdown supported' : 'Description'} rows={type === 'documents' ? 14 : 3} maxLength={type === 'documents' ? 200000 : type === 'tasks' ? 50000 : 20000} value={type === 'documents' ? values.content : values.description} onChange={e => update(type === 'documents' ? 'content' : 'description', e.target.value)}/></Field>
           {['projects','tasks'].includes(type) && <div className="form-grid"><Field label="Status"><select value={values.status} onChange={e => update('status', e.target.value)}><SelectOptions values={type === 'projects' ? PROJECT_STATUSES : TASK_STATUSES}/></select></Field>{type === 'tasks' ? <Field label="Priority"><select value={values.priority} onChange={e => update('priority', e.target.value)}><SelectOptions values={PRIORITIES}/></select></Field> : <Field label="Project color"><div className="color-picker">{COLORS.map(color => <button key={color} type="button" aria-label={`Color ${color}`} aria-pressed={values.color === color} style={{ background: color }} onClick={() => { dirty.current = true; update('color', color) }}>{values.color === color && <Check size={16}/>}</button>)}</div></Field>}</div>}
           {type !== 'documents' && <div className="form-grid"><Field label="Start date"><input type="date" value={values.start_date || ''} onChange={e => update('start_date', e.target.value)}/></Field><Field label="Due date"><input type="date" min={values.start_date || undefined} value={values.due_date || ''} onChange={e => update('due_date', e.target.value)}/></Field></div>}
           {type === 'documents' && <div className="form-grid"><Field label="Category"><input required maxLength={80} list="categories" value={values.category} onChange={e => update('category', e.target.value)}/><datalist id="categories">{['Notes','Plan','Research','Decision','Reference','Meeting'].map(c => <option key={c}>{c}</option>)}</datalist></Field><label className="checkbox-line"><input type="checkbox" checked={values.pinned} onChange={e => update('pinned', e.target.checked)}/> Pin this page</label></div>}
@@ -85,9 +125,9 @@ export function Editor({ editor, data, onSave, onDelete, onClose, onComment, onD
         </>}
         {error && <div className="form-error" role="alert">{error}</div>}
       </fieldset>
-      <div className="modal-footer">{item && <button type="button" className="button danger-text" disabled={busy} onClick={() => setConfirmDelete(true)}><Trash2 size={16}/> Delete</button>}<div className="footer-actions"><button type="button" className="button secondary" disabled={busy} onClick={close}>Cancel</button><button className="button primary" disabled={busy}>{busy ? 'Saving…' : item ? 'Save changes' : `Create ${singular}`}</button></div></div>
+      <div className="modal-footer">{record && <button type="button" className="button danger-text" disabled={busy} onClick={() => setConfirmDelete(true)}><Trash2 size={16}/> Delete</button>}<span className="muted" role="status">{busy ? 'Saving...' : error ? 'Changes not saved' : 'Changes save automatically'}</span>{!record && <button type="button" className="button secondary" disabled={busy} onClick={onClose}>Discard draft</button>}</div>
     </form>
-    {type === 'tasks' && item && <section className="comments"><h3>Updates & comments</h3>{data.comments.filter(c => c.task_id === item.id).sort((a,b) => a.created_at.localeCompare(b.created_at)).map(c => <div className="comment" key={c.id}><div className="comment-meta"><strong>You</strong><span>{formatDate(c.created_at)} · {new Date(c.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span><button className="icon-button" disabled={commentBusy} aria-label="Delete comment" onClick={async () => { if (!window.confirm('Delete this comment?')) return; setCommentBusy(true); try { await onDeleteComment(c) } catch(e) { setError(e.message) } finally { setCommentBusy(false) } }}><Trash2 size={14}/></button></div><p>{c.content}</p></div>)}<form className="inline-input" onSubmit={async e => { e.preventDefault(); if(!comment.trim()) return; setCommentBusy(true); setError(''); try { await onComment(item.id, comment.trim()); setComment('') } catch(err) { setError(err.message) } finally { setCommentBusy(false) } }}><input aria-label="New comment" required maxLength={10000} value={comment} onChange={e => setComment(e.target.value)}/><button className="button secondary" disabled={commentBusy || !comment.trim()} aria-label="Post comment"><Send size={17}/></button></form></section>}
+    {type === 'tasks' && record && <section className="comments"><h3>Updates & comments</h3>{data.comments.filter(c => c.task_id === record.id).sort((a,b) => a.created_at.localeCompare(b.created_at)).map(c => <div className="comment" key={c.id}><div className="comment-meta"><strong>You</strong><span>{formatDate(c.created_at)} · {new Date(c.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span><button className="icon-button" disabled={commentBusy} aria-label="Delete comment" onClick={async () => { if (!window.confirm('Delete this comment?')) return; setCommentBusy(true); try { await onDeleteComment(c) } catch(e) { setError(e.message) } finally { setCommentBusy(false) } }}><Trash2 size={14}/></button></div><p>{c.content}</p></div>)}<form className="inline-input" onSubmit={async e => { e.preventDefault(); if(!comment.trim()) return; setCommentBusy(true); setError(''); try { await onComment(record.id, comment.trim()); setComment('') } catch(err) { setError(err.message) } finally { setCommentBusy(false) } }}><input aria-label="New comment" required maxLength={10000} value={comment} onChange={e => setComment(e.target.value)}/><button className="button secondary" disabled={commentBusy || !comment.trim()} aria-label="Post comment"><Send size={17}/></button></form></section>}
     {confirmDelete && <div className="delete-confirm" role="alert"><strong>Delete this {singular}?</strong><p>{type === 'projects' ? 'This permanently deletes the project and all its tasks, pages, and comments. Archive it instead to keep its history.' : 'This action cannot be undone.'}</p><button className="button secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>Keep it</button><button className="button danger" disabled={busy} onClick={deleteItem}>{busy ? 'Deleting…' : 'Delete permanently'}</button></div>}
   </Modal>
 }

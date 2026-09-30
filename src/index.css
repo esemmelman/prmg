@@ -265,7 +265,19 @@ body, .login-page {
 .gantt-task-balloon { margin-top: 10px; margin-bottom: 8px; padding: 4px 7px; font-size: 12px; line-height: 1.4; min-height: 26px; }
 .gantt-task-balloon::after { top: 8px; left: -4px; width: 6px; height: 6px; border-left: 1px solid var(--balloon-color); border-top: 0; border-bottom: 1px solid var(--balloon-color); }
 
+.project-title-button { padding: 0; font: inherit; letter-spacing: inherit; text-align: left; }
+
 .task-subtasks { list-style: none; display: grid; gap: 7px; margin: 12px 0 0; padding: 0 0 0 24px; min-width: 0; }
 .task-row .task-subtasks { grid-column: 1 / -1; grid-row: 2; }
 .task-subtasks li { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
 .task-subtasks button { padding: 0; text-align: left; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.sidebar-project-group { margin: 0 0 4px; }
+.sidebar-project-heading { display: flex; align-items: center; gap: 2px; }
+.sidebar-project-heading .sidebar-project { flex: 1; min-width: 0; padding: 4px 8px; line-height: 20px; }
+.sidebar-project-heading .icon-button { width: 26px; height: 26px; }
+.sidebar-task-list { list-style: none; margin: 0; padding: 0 0 0 18px; }
+.sidebar-task { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 6px; border-radius: 4px; text-align: left; font-size: 13px; line-height: 18px; }
+.sidebar-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-task svg { color: var(--muted); }
+.sidebar-task:hover { background: #f0f3eb; }
+.sidebar-task.completed span { color: var(--muted); text-decoration: line-through; }
