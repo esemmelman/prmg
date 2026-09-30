@@ -17,7 +17,7 @@ export function SidebarProjects({ projects, tasks, projectId, onSelect, onEdit }
       <ul id={`sidebar-tasks-${project.id}`} className="sidebar-task-list" hidden={!!collapsed[project.id]}>
         {tasks.filter(task => task.project_id === project.id).sort((a,b) => a.sort_order == null && b.sort_order == null ? b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id) : a.sort_order == null ? -1 : b.sort_order == null ? 1 : a.sort_order - b.sort_order).map(task => <li key={task.id}>
           <button className={`sidebar-task ${task.status === 'done' ? 'completed' : ''}`} aria-label={`Edit task: ${task.title}`} title={`${task.title} · ${TASK_STATUSES[task.status] || task.status}`} onClick={() => onEdit('tasks', task)}>
-            <span>{task.title}</span>
+            <span>- {task.title}</span>
           </button>
         </li>)}
       </ul>
