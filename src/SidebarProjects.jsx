@@ -11,7 +11,7 @@ export function SidebarProjects({ projects, tasks, projectId, onSelect, onEdit }
         <button className="icon-button" aria-label={`${collapsed[project.id] ? 'Expand' : 'Collapse'} ${project.name}`} aria-expanded={!collapsed[project.id]} aria-controls={`sidebar-tasks-${project.id}`} onClick={() => setCollapsed(current => ({...current, [project.id]: !current[project.id]}))}>
           {collapsed[project.id] ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}
         </button>
-        <button title={project.name} className={`sidebar-project ${project.id === projectId ? 'selected' : ''}`} onClick={() => onSelect(project.id)}><i style={{background:project.color}}/><span>{project.name}</span></button>
+        <button title={project.name} className={`sidebar-project ${project.id === projectId ? 'selected' : ''}`} onClick={() => onSelect(project.id)}><span>{project.name}</span></button>
         <button className="icon-button" aria-label={`Add task to ${project.name}`} title="Add task" onClick={() => { setCollapsed(current => ({...current, [project.id]: false})); onEdit('tasks', null, {project_id:project.id}) }}><Plus size={14}/></button>
       </div>
       <ul id={`sidebar-tasks-${project.id}`} className="sidebar-task-list" hidden={!!collapsed[project.id]}>
