@@ -383,3 +383,13 @@ body, .login-page {
 .listbox-layout .main-content.projects-hidden { grid-template-columns: minmax(0,1fr); }
 .listbox-show { left: 0; right: auto; top: 32px; width: 22px; }
 @media(max-width:650px) { .listbox-show { top: 22px; } }
+
+.project-list-panel { position: sticky; top: 0; align-self: start; z-index: 12; background: #fff; }
+.workspace-header { position: sticky; top: 0; z-index: 11; background: #fff; padding-top: 8px; padding-bottom: 1px; }
+.workspace-header .listbox-show { left: -24px; top: 18px; }
+@media(max-width:650px) {
+  .project-list-panel .project-listbox { height: 120px; }
+  .workspace-header { top: 180px; }
+  .projects-hidden .workspace-header { top: 0; }
+  .workspace-header .listbox-show { left: -12px; width: 12px; }
+}

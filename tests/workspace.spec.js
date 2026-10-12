@@ -964,3 +964,22 @@ test('project list arrow collapses and restores the panel without changing the v
   await expect(page.getByRole('button',{name:'Show project list',exact:true})).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
 })
+
+test('project list heading and tabs remain visible when scrolling', async ({page}) => {
+  const {data} = await mockWorkspace(page)
+  const project={id:randomUUID(),name:'Sticky project',status:'active',color:'#426951',created_at:now(),updated_at:now()}
+  data.projects.push(project)
+  for(let index=0;index<30;index++) data.documents.push({id:randomUUID(),project_id:project.id,title:`Log ${index}`,content:`Log ${index}`,category:'Project log',created_at:now(),updated_at:now()})
+  await page.goto('./')
+  await page.getByRole('option',{name:project.name,exact:true}).click()
+  await page.evaluate(()=>window.scrollTo(0,600))
+  await expect.poll(async()=>Math.round((await page.locator('.workspace-header').boundingBox()).y)).toBe(0)
+  await expect.poll(async()=>Math.round((await page.locator('.project-list-panel').boundingBox()).y)).toBe(0)
+  await expect(page.locator('.project-tabs')).toBeInViewport()
+  await page.getByRole('button',{name:'Hide project list',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Show project list',exact:true})).toBeInViewport()
+  await expect(page.locator('.project-tabs')).toBeInViewport()
+  await page.getByRole('button',{name:'Show project list',exact:true}).click()
+  await expect(page.getByRole('listbox',{name:'Projects',exact:true})).toBeInViewport()
+  await page.screenshot({path:'test-results/sticky-navigation.png',fullPage:false})
+})
