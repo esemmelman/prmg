@@ -104,7 +104,7 @@ export default function App() {
     setSession(null); setSettings(false); setShowActivity(false); setAuthError(''); setSearch('')
   }
   function navigate(next, filter = 'all') { setView(next); setProjectId(null); setTaskFilter(filter); setSearch('') }
-  function selectProject(id) { if (id === '__all__') { navigate('allProjects'); setProjectTab('log'); return } setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setProjectTab('log'); setSearch('') }
+  function selectProject(id) { if (/Android/i.test(navigator.userAgent)) setShowProjects(false); if (id === '__all__') { navigate('allProjects'); setProjectTab('log'); return } setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setProjectTab('log'); setSearch('') }
   function edit(type, item = null, defaults = {}) {
     if(!online) { setError('You’re offline. Reconnect before making changes.'); return }
     if(type === 'tasks' && !data.projects.length) { setToast('Create a project first.'); type = 'projects'; item = null }

@@ -1003,7 +1003,7 @@ test('Android hides search and full-page chevron has an inset touch target', asy
   expect(Math.abs(listBounds.x + listBounds.width/2 - 393/2)).toBeLessThan(2)
   expect(listBounds.height).toBeGreaterThan(200)
   await page.getByRole('option',{name:'Android project',exact:true}).click()
-  await page.getByRole('button',{name:'Hide project list',exact:true}).click()
+  await expect(page.getByRole('listbox',{name:'Projects',exact:true})).toHaveCount(0)
   const arrow = await page.getByRole('button',{name:'Show project list',exact:true}).boundingBox()
   const heading = await page.getByRole('heading',{name:'Android project',exact:true}).boundingBox()
   expect(arrow.x).toBeGreaterThanOrEqual(12)
@@ -1019,6 +1019,8 @@ test('Android hides search and full-page chevron has an inset touch target', asy
   await page.screenshot({path:'test-results/android-full-page.png',fullPage:false})
   await page.getByRole('button',{name:'Show project list',exact:true}).click()
   await expect(page.getByRole('listbox',{name:'Projects',exact:true})).toBeVisible()
+  await page.getByRole('option',{name:'_All',exact:true}).click()
+  await expect(page.getByRole('listbox',{name:'Projects',exact:true})).toHaveCount(0)
   await context.close()
 })
 
@@ -1040,4 +1042,23 @@ test('All Gantt combines tasks in start date then alphabetical order', async ({p
   await page.locator('.project-tabs').getByRole('button',{name:'Gantt chart (2)',exact:true}).click()
   await expect(page.locator('.gantt-summary')).toHaveCount(1)
   await expect(page.locator('.gantt-project-name')).toHaveCount(0)
+})
+
+
+test('Description expands on focus and keeps edits when collapsed', async ({page}) => {
+  const {data} = await mockWorkspace(page)
+  data.projects.push({id:randomUUID(),name:'Description project',status:'active',description:'Original',color:'#426951',created_at:now(),updated_at:now()})
+  await page.goto('./')
+  await page.getByRole('option',{name:'Description project',exact:true}).click()
+  await page.getByRole('button',{name:'Description project',exact:true}).click()
+  const description=page.getByRole('dialog').getByLabel('Description',{exact:true})
+  const original=(await description.boundingBox()).height
+  await description.click()
+  expect((await description.boundingBox()).height).toBeGreaterThan(original*2)
+  await description.fill('Expanded draft')
+  await page.getByRole('dialog').getByLabel('Project name').click()
+  await expect(description).toHaveAttribute('rows','3')
+  await expect(description).toHaveValue('Expanded draft')
+  await page.getByRole('button',{name:'Close dialog'}).click()
+  expect(data.projects[0].description).toBe('Expanded draft')
 })

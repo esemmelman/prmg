@@ -411,3 +411,5 @@ body, .login-page {
   .android-device .workspace-header { top: calc(min(260px, 40vh) + 60px); }
   .android-device .projects-hidden .workspace-header { top: 0; }
 }
+
+.field textarea.description-expanded { min-height: 240px; max-height: 45vh; }
