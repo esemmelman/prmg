@@ -295,3 +295,19 @@ body, .login-page {
 .task-grid .grid-cell-error { background: #fff1ef; }
 .grid-cell-message { display: block; padding: 4px 8px; color: #a33b30; font-size: 12px; }
 .grid-empty { padding: 12px; margin: 0; font-size: 13px; color: var(--muted); }
+
+.listbox-layout .main-shell { margin-left: 0; width: 100%; }
+.project-picker { display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+.project-picker .field { width: 360px; max-width: 100%; }
+.project-picker select { height: 130px; padding: 4px; }
+.project-picker option { padding: 5px 8px; }
+.project-picker-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.all-projects-button { margin-bottom: 24px; }
+.project-log { max-width: 900px; }
+.project-log form { display: grid; gap: 12px; margin-bottom: 24px; }
+.project-log form .button { justify-self: start; }
+.log-entry { padding: 18px 0; border-bottom: 1px solid var(--border); }
+.log-entry time { font-size: 13px; color: var(--muted); }
+.log-entry p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.listbox-layout .topbar-start { display: flex; gap: 12px; align-items: center; }
+@media(max-width:650px) { .listbox-layout .topbar { flex-wrap: wrap; height: auto; padding: 12px; gap: 10px; } .project-picker .field { width: 100%; } }

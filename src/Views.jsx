@@ -17,7 +17,7 @@ export function ProjectCard({ project, data, onSelect, onEdit }) {
     <button className="card-title" onClick={() => onSelect(project.id)}>{project.name}<ArrowUpRight size={19}/></button>
     <p className="project-description">{project.description || 'A little space for your next big thing.'}</p>
     <div className="progress-label"><span>{tasks.filter(t => t.status === 'done').length} of {tasks.length} tasks done</span><strong>{percent}%</strong></div><div className="progress-track"><span style={{ width: `${percent}%` }}/></div>
-    <div className="project-card-footer"><span><CalendarDays size={14}/>{project.due_date ? formatDate(project.due_date) : 'No deadline'}</span>{late ? <span className="late">{late} overdue</span> : <span>{data.documents.filter(d => d.project_id === project.id).length} pages</span>}</div>
+    <div className="project-card-footer"><span><CalendarDays size={14}/>{project.due_date ? formatDate(project.due_date) : 'No deadline'}</span>{late ? <span className="late">{late} overdue</span> : <span>{data.documents.filter(d => d.category !== 'Project log' && d.project_id === project.id).length} pages</span>}</div>
   </article>
 }
 
@@ -136,8 +136,8 @@ export function Tasks({ data, projectId, taskFocusRequest, search, onEdit, onSav
 
 export function Knowledge({ data, projectId, search, onEdit }) {
   const [category, setCategory] = useState('All')
-  const documents = data.documents.filter(d => (!projectId || d.project_id === projectId) && matches(d,search) && (category === 'All' || d.category === category)).sort((a,b) => Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at))
-  const categories = [...new Set(data.documents.filter(d => !projectId || d.project_id === projectId).map(d => d.category))].sort()
+  const documents = data.documents.filter(d => d.category !== 'Project log' && (!projectId || d.project_id === projectId) && matches(d,search) && (category === 'All' || d.category === category)).sort((a,b) => Number(b.pinned) - Number(a.pinned) || b.updated_at.localeCompare(a.updated_at))
+  const categories = [...new Set(data.documents.filter(d => d.category !== 'Project log' && (!projectId || d.project_id === projectId)).map(d => d.category))].sort()
   return <><div className="view-toolbar"><div className="filter-tabs"><button className={category === 'All' ? 'selected' : ''} onClick={() => setCategory('All')}>All pages</button>{categories.map(c => <button key={c} className={category === c ? 'selected' : ''} onClick={() => setCategory(c)}>{c}</button>)}</div><span className="muted">{documents.length} pages</span></div>{documents.length ? <div className="document-grid">{documents.map(d => <button key={d.id} className="document-card" onClick={() => onEdit('documents',d)}><div className="document-card-top"><span className="document-icon"><BookOpen size={22}/></span><span className="label">{d.category}</span>{d.pinned && <Pin size={15}/>}</div><h3>{d.title}</h3><p>{d.content.replace(/[#*`>[\]]/g,'').slice(0,155) || 'No content yet.'}</p><div className="document-card-bottom"><ProjectName id={d.project_id} projects={data.projects}/><span>{formatDate(d.updated_at)}</span></div></button>)}</div> : <Empty icon={BookOpen} title="Good ideas deserve a place" text="Keep plans, decisions, research, and meeting notes connected to your projects." action={() => onEdit('documents')} label="Create a page"/>}</>
 }
 

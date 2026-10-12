@@ -25,3 +25,5 @@ Assignees are organizational labels, not invitations. Project deletion cascades 
 Run `npx playwright install chromium`, `npm run build`, then `npx playwright test`. Browser tests use a mocked API and verify creation, task completion, subtasks, comments, Markdown preview, Gantt charts, failed-save recovery, export, mobile layout, sign-in errors, and expired sessions.
 
 `tests/database-security.sql` runs administrator-only transaction tests against Supabase, then rolls back all fixtures. It checks real owner CRUD, activity triggers, optimistic concurrency, date constraints, cascade deletion, session expiry, non-owner isolation, and anonymous denial. No fixtures remain in the live database.
+
+Projects are selected from an alphabetical listbox above the workspace. Add, edit, and delete controls sit beside it. Select a project and open Log (before Tasks) to add timestamped entries for that project. Log entries persist as project-linked documents in the reserved `Project log` category and are excluded from Knowledge base. Switching projects keeps the selected tab and shows only that project’s entries.

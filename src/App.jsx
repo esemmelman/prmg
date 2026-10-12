@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FolderOpen, LayoutGrid, ListTodo, BookOpen, CalendarDays, Search, Plus, Settings2, LogOut, LockKeyhole, ArrowRight, LoaderCircle, ChevronLeft, ChevronRight, X, Download, ShieldCheck, CircleHelp, Sprout, Activity, Check } from 'lucide-react'
+import { FolderOpen, LayoutGrid, ListTodo, BookOpen, CalendarDays, Search, Plus, Settings2, LogOut, LockKeyhole, ArrowRight, LoaderCircle, X, Download, ShieldCheck, CircleHelp, Sprout, Activity, Check } from 'lucide-react'
 import { supabase, loadWorkspace, saveRecord, removeRecord, reorderTask, emptyData } from './data'
 import { OWNER_ID, LOGIN_EMAIL } from './config'
 import { version } from '../package.json'
 import { PROJECT_STATUSES, progress, downloadJson, formatDate } from './utils'
 import { Editor, Modal } from './Editor'
-import { SidebarProjects } from './SidebarProjects'
+import { ProjectListbox } from './ProjectListbox'
+import { ProjectLog } from './ProjectLog'
 import { Projects, Tasks, Knowledge, GanttChart, Badge } from './Views'
 
 const nav = [ ['gantt','Gantt chart',CalendarDays], ['tasks','Tasks',ListTodo], ['knowledge','Knowledge base',BookOpen] ]
@@ -36,16 +37,8 @@ export default function App() {
   const [editor, setEditor] = useState(null)
   const [settings, setSettings] = useState(false)
   const [showActivity, setShowActivity] = useState(false)
-  const [sidebar, setSidebar] = useState(() => window.matchMedia('(min-width: 651px)').matches)
   const [toast, setToast] = useState('')
   const [online, setOnline] = useState(navigator.onLine)
-  useEffect(() => {
-    const desktop = window.matchMedia('(min-width: 651px)')
-    const resize = event => setSidebar(event.matches)
-    desktop.addEventListener('change', resize)
-    return () => desktop.removeEventListener('change', resize)
-  }, [])
-  const closeMobileSidebar = () => { if(window.matchMedia('(max-width: 650px)').matches) setSidebar(false) }
   const searchRef = useRef(null)
   const requestCounter = useRef(0)
   const mutationBusy = useRef(false)
@@ -107,8 +100,8 @@ export default function App() {
     if(error) { setError(error.message); return }
     setSession(null); setSettings(false); setShowActivity(false); setAuthError(''); setSearch('')
   }
-  function navigate(next, filter = 'all') { setView(next); setProjectId(null); setTaskFilter(filter); setSearch(''); closeMobileSidebar() }
-  function selectProject(id) { setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setProjectTab('tasks'); setSearch(''); closeMobileSidebar() }
+  function navigate(next, filter = 'all') { setView(next); setProjectId(null); setTaskFilter(filter); setSearch('') }
+  function selectProject(id) { setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setSearch('') }
   function edit(type, item = null, defaults = {}) {
     if(!online) { setError('You’re offline. Reconnect before making changes.'); return }
     if(type === 'tasks' && !data.projects.length) { setToast('Create a project first.'); type = 'projects'; item = null }
@@ -146,7 +139,7 @@ export default function App() {
     try {
       await removeRecord(type,item)
       setData(current => ({...current,[type]:current[type].filter(r => r.id !== item.id)}))
-      if(type === 'projects' && item.id === projectId) navigate('projects')
+      if(type === 'projects' && item.id === projectId) navigate('blank')
       setToast('Deleted'); await refresh(true)
     } finally { mutationBusy.current = false }
   }
@@ -162,15 +155,14 @@ export default function App() {
   if(!authReady) return <div className="app-loading"><Sprout size={30}/><p>Opening your workspace…</p></div>
   if(!session) return <Login onLogin={login} error={authError} busy={loginBusy}/>
   if(!verified || !loaded) return <div className="app-loading"><Sprout size={30}/><h2>{error ? 'Your workspace couldn’t load' : 'Making room for good work…'}</h2>{error ? <><p role="alert">{error}</p><button className="button primary" onClick={() => refresh()}>Try again</button><button className="button secondary" onClick={logout}>Back to sign in</button></> : <LoaderCircle className="spin" size={20}/>}</div>
-  return <div className={`app-shell ${sidebar ? 'sidebar-visible' : 'sidebar-hidden'}`}>
-    {sidebar && <button className="sidebar-overlay" aria-label="Close navigation" onClick={() => setSidebar(false)}/>}
-    <aside id="workspace-sidebar" className={`sidebar ${sidebar ? 'open' : ''}`} inert={!sidebar}><button className="icon-button sidebar-close" aria-label="Hide navigation" title="Hide sidebar" aria-expanded={sidebar} aria-controls="workspace-sidebar" onClick={() => setSidebar(false)}><ChevronLeft size={20}/></button><div className="sidebar-projects-heading"><button className="icon-button" aria-label="Create project" onClick={() => edit('projects')}><Plus size={15}/></button></div><SidebarProjects projects={data.projects} tasks={data.tasks} projectId={projectId} onSelect={selectProject} onEdit={edit}/><nav className="workspace-nav" aria-label="Workspace"><button className={`nav-link ${allProjects ? 'active' : ''}`} onClick={() => { navigate('allProjects'); setProjectTab('gantt') }}><LayoutGrid size={18}/><span>All Projects</span></button></nav><div className="sidebar-bottom"><button className="nav-link" onClick={() => setSettings(true)}><Settings2 size={18}/> Workspace settings</button><div className="app-version sidebar-version">v{version}</div><div className="user-profile"><span className="user-avatar">E</span><div><strong>Elliot</strong><span>Personal workspace</span></div><button className="icon-button" aria-label="Sign out" title="Sign out" onClick={logout}><LogOut size={17}/></button></div></div></aside>
-    <div className="main-shell"><header className="topbar"><div className="topbar-start">{!sidebar && <button className="icon-button sidebar-toggle" aria-label="Open navigation" title="Show sidebar" aria-expanded={sidebar} aria-controls="workspace-sidebar" onClick={() => setSidebar(true)}><ChevronRight size={20}/></button>}</div><div className="topbar-actions"><label className="search-box"><Search size={16}/><input ref={searchRef} aria-label="Search current view" value={search} onChange={e => setSearch(e.target.value)}/>{search ? <button className="icon-button" aria-label="Clear search" onClick={() => setSearch('')}><X size={14}/></button> : <kbd>Ctrl K</kbd>}</label><button className="icon-button activity-button" title="Recent activity" aria-label="Recent activity" onClick={() => setShowActivity(true)}><Activity size={19}/></button><span className="topbar-avatar">E</span></div></header>
-      <main className="main-content" aria-busy={loading}>{view !== 'blank' && <div className="page-heading"><div><div className="page-title"><h1>{project ? <button className="project-title-button" title="Project details" onClick={() => edit('projects',project)}>{title}</button> : title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div>{(project || descriptions[view]) && <p>{project ? project.description || '' : descriptions[view]}</p>}</div><div className="heading-actions">{createType === 'documents' && <button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button>}</div></div>}
+  return <div className="app-shell listbox-layout">
+    <div className="main-shell"><header className="topbar"><div className="topbar-start"><button className="button secondary" onClick={() => setSettings(true)}><Settings2 size={18}/> Workspace settings</button><span className="app-version">v{version}</span></div><div className="topbar-actions"><label className="search-box"><Search size={16}/><input ref={searchRef} aria-label="Search current view" value={search} onChange={e => setSearch(e.target.value)}/>{search ? <button className="icon-button" aria-label="Clear search" onClick={() => setSearch('')}><X size={14}/></button> : <kbd>Ctrl K</kbd>}</label><button className="icon-button activity-button" title="Recent activity" aria-label="Recent activity" onClick={() => setShowActivity(true)}><Activity size={19}/></button><span className="topbar-avatar">E</span></div></header>
+      <main className="main-content" aria-busy={loading}><ProjectListbox projects={data.projects} projectId={projectId} onSelect={selectProject} onEdit={edit} onDelete={remove}/><button className="button secondary all-projects-button" onClick={() => { navigate('allProjects'); setProjectTab('gantt') }}><LayoutGrid size={18}/>All Projects</button>{view !== 'blank' && <div className="page-heading"><div><div className="page-title"><h1>{project ? <button className="project-title-button" title="Project details" onClick={() => edit('projects',project)}>{title}</button> : title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div>{(project || descriptions[view]) && <p>{project ? project.description || '' : descriptions[view]}</p>}</div><div className="heading-actions">{createType === 'documents' && <button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button>}</div></div>}
       {!online && <div className="error-banner" role="status">You’re offline. Your saved workspace is visible; reconnect to make changes.</div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()} className="text-link">Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
       {project && <><div className="project-summary"><span><CalendarDays size={15}/>{project.start_date ? formatDate(project.start_date) : 'No start date'} — {project.due_date ? formatDate(project.due_date) : 'No deadline'}</span><span><Check size={15}/>{progress(data.tasks.filter(t => t.project_id === project.id))}% complete</span></div></>}
-      {(project || allProjects) && <div className="project-tabs">{(allProjects ? [['gantt','Gantt chart',CalendarDays],['tasks','Tasks',ListTodo],['knowledge','Knowledge base',BookOpen]] : [['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],['knowledge','Knowledge base',BookOpen]]).map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
+      {(project || allProjects) && <div className="project-tabs">{(allProjects ? [['gantt','Gantt chart',CalendarDays],['tasks','Tasks',ListTodo],['knowledge','Knowledge base',BookOpen]] : [['log','Log',BookOpen],['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],['knowledge','Knowledge base',BookOpen]]).map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
+      {currentView === 'log' && project && <ProjectLog key={project.id} data={data} projectId={project.id} search={search} onCreate={save} onDelete={remove}/>}
       {currentView === 'projects' && <Projects {...props}/>}{currentView === 'tasks' && <Tasks key={`${projectId || view}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{currentView === 'gantt' && <GanttChart key={projectId || 'all'} {...props}/>}
 
       </main></div>
