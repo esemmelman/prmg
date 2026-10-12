@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, GripVertical } from 'lucide-react'
 import { TASK_STATUSES, PRIORITIES } from './utils'
 
 function Cell({ task, field, label, type = 'text', options, onSave, disabled }) {
@@ -33,9 +33,25 @@ function Cell({ task, field, label, type = 'text', options, onSave, disabled }) 
   </td>
 }
 
-export function TaskGrid({ tasks, data, projectId, onSave, onEdit }) {
+export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, manual }) {
   const [busy, setBusy] = useState(false)
   const pending = useRef(false)
+  const dragged = useRef(null)
+  const [target, setTarget] = useState(null)
+  const [moveError, setMoveError] = useState('')
+  async function move(task, to, after) {
+    if (!manual || pending.current || !task || !to || task.id === to.id) return
+    pending.current = true; setBusy(true); setTarget(null); setMoveError('')
+    try { await onReorder(task.id, to.id, after) }
+    catch (err) { setMoveError(`Could not reorder ${task.title}: ${err.message}`) }
+    finally { pending.current = false; setBusy(false) }
+  }
+  function startDrag(event, task) {
+    if (!manual || pending.current || event.target.closest('input,select')) { event.preventDefault(); return }
+    dragged.current = task
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', task.id)
+  }
   async function save(...args) {
     if(pending.current) throw new Error('Another cell is saving. Please retry.')
     pending.current = true; setBusy(true)
@@ -43,10 +59,27 @@ export function TaskGrid({ tasks, data, projectId, onSave, onEdit }) {
     finally { pending.current = false; setBusy(false) }
   }
   return <div className="task-grid-scroll" role="region" aria-label="Task spreadsheet" tabIndex={0}>
+    {moveError && <p className="form-error" role="alert">{moveError}</p>}
     <table className="task-grid" aria-label="Tasks" aria-busy={busy}>
       <thead><tr><th scope="col">#</th><th scope="col">Task</th>{!projectId && <th scope="col">Project</th>}<th scope="col">Status</th><th scope="col">Start date</th><th scope="col">End date</th><th scope="col">Priority</th><th scope="col">Assignee</th><th scope="col">Details</th></tr></thead>
-      <tbody>{tasks.map((task,index) => <tr key={task.id}>
-        <th scope="row">{index + 1}</th>
+      <tbody>{tasks.map((task,index) => <tr key={task.id} draggable={manual && !busy} className={target?.id === task.id ? target.after ? 'grid-drop-after' : 'grid-drop-before' : ''} onDragStart={event => startDrag(event,task)} onDragEnd={() => { dragged.current = null; setTarget(null) }} onDragOver={event => {
+        if (!manual || busy || !dragged.current || dragged.current.id === task.id) return
+        event.preventDefault(); event.dataTransfer.dropEffect = 'move'
+        const rect = event.currentTarget.getBoundingClientRect()
+        setTarget({id:task.id,after:event.clientY > rect.top + rect.height/2})
+      }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget)) setTarget(null) }} onDrop={event => {
+        event.preventDefault()
+        const from = dragged.current; dragged.current = null
+        const rect = event.currentTarget.getBoundingClientRect()
+        void move(from,task,event.clientY > rect.top + rect.height/2)
+      }}>
+        <th scope="row"><button className="grid-order-handle" aria-label={`Reorder ${task.title}`} title={manual ? 'Drag to reorder; Alt + Up/Down also moves this task' : 'Choose Manual order to rearrange tasks'} disabled={!manual || busy} draggable={manual && !busy} onDragStart={event => { event.stopPropagation(); startDrag(event,task) }} onDragEnd={() => { dragged.current = null; setTarget(null) }} onKeyDown={event => {
+          if (event.altKey && ['ArrowUp','ArrowDown'].includes(event.key)) {
+            event.preventDefault()
+            const after = event.key === 'ArrowDown'
+            void move(task,tasks[index + (after ? 1 : -1)],after)
+          }
+        }}><GripVertical size={14}/><span>{index + 1}</span></button></th>
         <Cell task={task} field="title" label="Title" onSave={save} disabled={busy}/>
         {!projectId && <td className="grid-project">{data.projects.find(project => project.id === task.project_id)?.name}</td>}
         <Cell task={task} field="status" label="Status" options={TASK_STATUSES} onSave={save} disabled={busy}/>
