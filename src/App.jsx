@@ -159,7 +159,7 @@ export default function App() {
     knowledge: projectDocuments.filter(document => !['Project log','Project pages','Project links'].includes(document.category)).length,
   }
   const currentView = projectId || allProjects ? projectTab : view
-  const title = project?.name || (allProjects ? '_All' : '') || nav.find(n => n[0] === view)?.[1] || (view === 'projects' ? 'Projects' : '')
+  const title = project?.name || (allProjects ? 'All' : '') || nav.find(n => n[0] === view)?.[1] || (view === 'projects' ? 'Projects' : '')
   const createType = {overview:'projects',projects:'projects',tasks:'tasks',knowledge:'documents'}[currentView]
   const createLabel = {projects:'New project',tasks:'New task',documents:'New page'}[createType]
   const props = {data,search,taskFocusRequest,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,onReorder:reorder,projectId,includeArchived:allProjects}
