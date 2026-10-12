@@ -313,10 +313,10 @@ body, .login-page {
 .listbox-layout .main-content { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 28px; align-items: start; }
 .project-picker { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 18px 0 0; position: relative; width: 210px; max-width: 100%; }
 .project-picker .project-add { align-self: flex-start; }
-.project-listbox { height: 150px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; }
-.project-listbox [role=option] { padding: 6px 8px; cursor: pointer; overflow-wrap: anywhere; }
-.project-listbox [aria-selected=true] { background: #e8eee8; }
-.project-listbox [role=option]:focus { outline: 2px solid #426951; outline-offset: -2px; }
+.project-listbox { height: 450px; max-height: 65vh; overflow-y: scroll; overflow-x: auto; border: 1px solid #828790; border-radius: 0; padding: 2px; background: white; color: black; font: 400 16px/20px Arial, sans-serif; scrollbar-color: #888 #f0f0f0; }
+.project-listbox [role=option] { padding: 0 1px; cursor: default; white-space: nowrap; width: max-content; min-width: 100%; }
+.project-listbox [aria-selected=true] { background: #d9d9d9; color: black; }
+.project-listbox [role=option]:focus { background: #0078d7; color: white; outline: 1px dotted white; outline-offset: -1px; }
 .project-context-menu { background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 18px #0002; padding: 4px; z-index: 10; position: absolute; top: 65px; left: 30px; width: 145px; }
 .project-context-menu button { display: block; text-align: left; width: 100%; padding: 8px 12px; }
 .project-context-menu button:hover, .project-context-menu button:focus { background: #eef3ee; }
@@ -333,3 +333,6 @@ body, .login-page {
 .rich-text-editor ol, .log-entry-content ol { list-style: decimal; padding-left: 24px; }
 @media(max-width:650px) { .listbox-layout .main-content { grid-template-columns: minmax(0,1fr); gap: 18px; } .project-picker { width: 210px; } }
 .rich-text-editor, .log-entry-content { font-weight: 400; }
+
+.log-add { margin: 16px 0; }
+.project-listbox .muted { color: #555; font: inherit; }

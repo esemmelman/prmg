@@ -10,16 +10,32 @@ function plain(html) { const node = document.createElement('div'); node.innerHTM
 
 export function ProjectLog({ data, projectId, search, onCreate, onDelete }) {
   const editorRef = useRef(null)
+  const addRef = useRef(null)
+  const [showEditor, setShowEditor] = useState(false)
   const [editing, setEditing] = useState(null)
   const [hasText, setHasText] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => { editorRef.current?.focus() }, [])
+  useEffect(() => {
+    if (!showEditor) return
+    editorRef.current.innerHTML = editing ? entryHtml(editing.content) : ''
+    editorRef.current.focus()
+  }, [showEditor, editing])
   const entries = data.documents.filter(entry => entry.category === 'Project log' && entry.project_id === projectId && plain(entryHtml(entry.content)).toLowerCase().includes(search.toLowerCase())).sort((a,b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id))
-  function reset() { setEditing(null); editorRef.current.innerHTML = ''; setHasText(false); setError(''); editorRef.current.focus() }
+  function reset() { setShowEditor(false); setEditing(null); setHasText(false); setError(''); addRef.current?.focus() }
   function format(command) { editorRef.current.focus(); document.execCommand('styleWithCSS', false, false); document.execCommand(command); setHasText(!!plain(editorRef.current.innerHTML)) }
   return <section className="project-log" aria-label="Project log">
-    <form onSubmit={async event => {
+    {error && <p className="form-error" role="alert">{error}</p>}
+    {!entries.length && <p className="muted">No log entries for this project.</p>}
+    {entries.map(entry => <article className="log-entry" key={entry.id}><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
+      setEditing(entry); setShowEditor(true); setError(''); setHasText(!!plain(entryHtml(entry.content)))
+    }}>Edit entry</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
+      if (!window.confirm('Delete this log entry?')) return
+      setBusy(true); setError('')
+      try { await onDelete('documents',entry); if (editing?.id === entry.id) reset() } catch (err) { setError(err.message) } finally { setBusy(false) }
+    }}>Delete entry</button></div></article>)}
+    <button ref={addRef} className="button secondary small log-add" disabled={busy || showEditor} onClick={() => { setEditing(null); setHasText(false); setError(''); setShowEditor(true) }}>Add</button>
+    {showEditor && <form onSubmit={async event => {
       event.preventDefault(); if (busy) return
       const html = clean(editorRef.current.innerHTML), text = plain(html)
       if (!text) { setError('Enter some text for this log entry.'); return }
@@ -36,16 +52,8 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete }) {
         else document.execCommand('insertText',false,event.clipboardData.getData('text/plain'))
         setHasText(!!plain(editorRef.current.innerHTML))
       }}/>
-      <div className="log-editor-actions"><button className="button primary" disabled={busy || !hasText}>{busy ? 'Saving…' : editing ? 'Save entry' : 'Add entry'}</button>{editing && <button type="button" className="button secondary" disabled={busy} onClick={reset}>Cancel edit</button>}</div>
-    </form>
-    {error && <p className="form-error" role="alert">{error}</p>}
-    {!entries.length && <p className="muted">No log entries for this project.</p>}
-    {entries.map(entry => <article className="log-entry" key={entry.id}><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
-      setEditing(entry); setError(''); editorRef.current.innerHTML = entryHtml(entry.content); setHasText(true); editorRef.current.focus()
-    }}>Edit entry</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
-      if (!window.confirm('Delete this log entry?')) return
-      setBusy(true); setError('')
-      try { await onDelete('documents',entry); if (editing?.id === entry.id) reset() } catch (err) { setError(err.message) } finally { setBusy(false) }
-    }}>Delete entry</button></div></article>)}
+      <div className="log-editor-actions"><button className="button primary" disabled={busy || !hasText}>{busy ? 'Saving…' : editing ? 'Save entry' : 'Add entry'}</button><button type="button" className="button secondary" disabled={busy} onClick={reset}>Cancel</button></div>
+    </form>}
+
   </section>
 }
