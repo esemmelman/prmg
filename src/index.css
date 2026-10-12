@@ -306,7 +306,7 @@ body, .login-page {
 .project-log form { display: grid; gap: 12px; margin-bottom: 24px; }
 .project-log form .button { justify-self: start; }
 .log-entry { padding: 18px 0; border-bottom: 1px solid var(--border); }
-.log-entry time { font-size: 13px; color: var(--muted); }
+.log-entry time { font-size: 13px; color: #222; }
 .log-entry p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .listbox-layout .topbar-start { display: flex; gap: 12px; align-items: center; }
 @media(max-width:650px) { .listbox-layout .topbar { flex-wrap: wrap; height: auto; padding: 12px; gap: 10px; } .project-picker .field { width: 100%; } }
