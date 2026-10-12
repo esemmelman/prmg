@@ -404,3 +404,10 @@ body, .login-page {
 
 .android-device .project-tabs { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; gap: 22px; -webkit-overflow-scrolling: touch; }
 .android-device .project-tabs button { flex: 0 0 auto; white-space: nowrap; }
+
+.android-device .project-list-panel { justify-self: center; }
+.android-device .project-list-panel .project-listbox { height: 260px; max-height: 40vh; }
+@media(max-width:650px) {
+  .android-device .workspace-header { top: calc(min(260px, 40vh) + 60px); }
+  .android-device .projects-hidden .workspace-header { top: 0; }
+}
