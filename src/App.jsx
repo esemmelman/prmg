@@ -6,6 +6,7 @@ import { version } from '../package.json'
 import { PROJECT_STATUSES, progress, downloadJson, formatDate } from './utils'
 import { Editor, Modal } from './Editor'
 import { ProjectListbox } from './ProjectListbox'
+import { AllProjectViews } from './AllProjectViews'
 import { ProjectLinks } from './ProjectLinks'
 import { ProjectLog } from './ProjectLog'
 import { Projects, Tasks, Knowledge, GanttChart, Badge } from './Views'
@@ -102,11 +103,11 @@ export default function App() {
     setSession(null); setSettings(false); setShowActivity(false); setAuthError(''); setSearch('')
   }
   function navigate(next, filter = 'all') { setView(next); setProjectId(null); setTaskFilter(filter); setSearch('') }
-  function selectProject(id) { setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setProjectTab('log'); setSearch('') }
+  function selectProject(id) { if (id === '__all__') { navigate('allProjects'); setProjectTab('log'); return } setTaskFocusRequest(value => value + 1); setProjectId(id); setView('project'); setProjectTab('log'); setSearch('') }
   function edit(type, item = null, defaults = {}) {
     if(!online) { setError('You’re offline. Reconnect before making changes.'); return }
     if(type === 'tasks' && !data.projects.length) { setToast('Create a project first.'); type = 'projects'; item = null }
-    setEditor({type,item,projectId,defaults})
+    setEditor({type,item,projectId:defaults.project_id || projectId,defaults})
   }
   async function save(type, values, item, quiet = false) {
     if(mutationBusy.current) throw new Error('Another change is saving. Please try again in a moment.')
@@ -158,7 +159,7 @@ export default function App() {
     knowledge: projectDocuments.filter(document => !['Project log','Project pages','Project links'].includes(document.category)).length,
   }
   const currentView = projectId || allProjects ? projectTab : view
-  const title = project?.name || (allProjects ? 'All Projects' : '') || nav.find(n => n[0] === view)?.[1] || (view === 'projects' ? 'Projects' : '')
+  const title = project?.name || (allProjects ? '_All' : '') || nav.find(n => n[0] === view)?.[1] || (view === 'projects' ? 'Projects' : '')
   const createType = {overview:'projects',projects:'projects',tasks:'tasks',knowledge:'documents'}[currentView]
   const createLabel = {projects:'New project',tasks:'New task',documents:'New page'}[createType]
   const props = {data,search,taskFocusRequest,onEdit:edit,onSelect:selectProject,onNavigate:navigate,onSave:quickSave,onCreate:save,onReorder:reorder,projectId,includeArchived:allProjects}
@@ -168,15 +169,16 @@ export default function App() {
   if(!verified || !loaded) return <div className="app-loading"><Sprout size={30}/><h2>{error ? 'Your workspace couldn’t load' : 'Making room for good work…'}</h2>{error ? <><p role="alert">{error}</p><button className="button primary" onClick={() => refresh()}>Try again</button><button className="button secondary" onClick={logout}>Back to sign in</button></> : <LoaderCircle className="spin" size={20}/>}</div>
   return <div className="app-shell listbox-layout">
     <div className="main-shell"><header className="topbar"><div className="topbar-start"><button className="button secondary" onClick={() => setSettings(true)}><Settings2 size={18}/> Workspace settings</button><span className="app-version">v{version}</span></div><div className="topbar-actions"><label className="search-box"><Search size={16}/><input ref={searchRef} aria-label="Search current view" value={search} onChange={e => setSearch(e.target.value)}/>{search ? <button className="icon-button" aria-label="Clear search" onClick={() => setSearch('')}><X size={14}/></button> : <kbd>Ctrl K</kbd>}</label><button className="icon-button activity-button" title="Recent activity" aria-label="Recent activity" onClick={() => setShowActivity(true)}><Activity size={19}/></button><span className="topbar-avatar">E</span></div></header>
-      <main className="main-content" aria-busy={loading}><ProjectListbox projects={data.projects} projectId={projectId} onSelect={selectProject} onEdit={edit} onDelete={remove}/><div className="workspace-center">{view !== 'blank' && <div className="page-heading"><div><div className="page-title"><h1>{project ? <button className="project-title-button" title="Project details" onClick={() => edit('projects',project)}>{title}</button> : title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div>{(project || descriptions[view]) && <p>{project ? project.description || '' : descriptions[view]}</p>}</div><div className="heading-actions">{createType === 'documents' && <button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button>}</div></div>}
+      <main className="main-content" aria-busy={loading}><ProjectListbox projects={data.projects} projectId={allProjects ? '__all__' : projectId} onSelect={selectProject} onEdit={edit} onDelete={remove}/><div className="workspace-center">{view !== 'blank' && <div className="page-heading"><div><div className="page-title"><h1>{project ? <button className="project-title-button" title="Project details" onClick={() => edit('projects',project)}>{title}</button> : title}</h1>{project && <Badge value={project.status} labels={PROJECT_STATUSES}/>}</div>{(project || descriptions[view]) && <p>{project ? project.description || '' : descriptions[view]}</p>}</div><div className="heading-actions">{!allProjects && createType === 'documents' && <button className="button primary" onClick={() => edit(createType)}><Plus size={17}/>{createLabel}</button>}</div></div>}
       {!online && <div className="error-banner" role="status">You’re offline. Your saved workspace is visible; reconnect to make changes.</div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()} className="text-link">Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
       {project && <><div className="project-summary"><span><CalendarDays size={15}/>{project.start_date ? formatDate(project.start_date) : 'No start date'} — {project.due_date ? formatDate(project.due_date) : 'No deadline'}</span><span><Check size={15}/>{progress(data.tasks.filter(t => t.project_id === project.id))}% complete</span></div></>}
-      {(project || allProjects) && <div className="project-tabs">{(allProjects ? [['gantt','Gantt chart',CalendarDays],['tasks','Tasks',ListTodo],['knowledge','Knowledge base',BookOpen]] : [['log','Log',BookOpen],['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],['pages','Pages',BookOpen],['links','Links',BookOpen],['knowledge','Knowledge base',BookOpen]]).map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label} ({tabCounts[key]})</button>)}</div>}
+      {(project || allProjects) && <div className="project-tabs">{[['log','Log',BookOpen],['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],['pages','Pages',BookOpen],['links','Links',BookOpen],['knowledge','Knowledge base',BookOpen]].map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label} ({tabCounts[key]})</button>)}</div>}
+      {allProjects && <AllProjectViews key={currentView} currentView={currentView} {...props} onCreate={save} onDelete={remove}/>}
       {currentView === 'log' && project && <ProjectLog key={project.id} data={data} projectId={project.id} search={search} onCreate={save} onDelete={remove}/>}
       {currentView === 'pages' && project && <ProjectLog key={`pages-${project.id}`} kind="pages" data={data} projectId={project.id} search={search} onCreate={save} onDelete={remove}/>}
       {currentView === 'links' && project && <ProjectLinks key={project.id} data={data} projectId={project.id} search={search} onSave={save} onDelete={remove}/>}
-      {currentView === 'projects' && <Projects {...props}/>}{currentView === 'tasks' && <Tasks key={`${projectId || view}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{currentView === 'gantt' && <GanttChart key={projectId || 'all'} {...props}/>}
+      {currentView === 'projects' && <Projects {...props}/>}{!allProjects && currentView === 'tasks' && <Tasks key={`${projectId || view}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{!allProjects && currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{!allProjects && currentView === 'gantt' && <GanttChart key={projectId || 'all'} {...props}/>}
 
       </div></main></div>
     {editor && <Editor key={`${editor.type}-${editor.item?.id || 'new'}`} editor={editor} data={data} onSave={(type, values, item) => save(type, values, item, true)} onDelete={remove} onClose={() => setEditor(null)} onComment={(taskId,content) => save('comments',{task_id:taskId,content})} onDeleteComment={comment => remove('comments',comment)}/>}

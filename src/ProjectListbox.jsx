@@ -6,7 +6,7 @@ export function ProjectListbox({ projects, projectId, onSelect, onEdit, onDelete
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const menuRef = useRef(null)
-  const sorted = [...projects].sort((a,b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }) || a.id.localeCompare(b.id))
+  const sorted = [{id:'__all__',name:'_All'}, ...[...projects].sort((a,b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }) || a.id.localeCompare(b.id))]
   useEffect(() => {
     if (!menu) return
     menuRef.current?.querySelector('button')?.focus()
@@ -14,7 +14,7 @@ export function ProjectListbox({ projects, projectId, onSelect, onEdit, onDelete
     document.addEventListener('pointerdown', close)
     return () => document.removeEventListener('pointerdown', close)
   }, [menu])
-  function openMenu(event, project) { event.preventDefault(); setMenu(project) }
+  function openMenu(event, project) { event.preventDefault(); if (project.id !== '__all__') setMenu(project) }
   return <section className="project-picker" aria-label="Project management">
     <button className="icon-button project-add" aria-label="Create project" title="Create project" onClick={() => onEdit('projects')}><Plus size={18}/></button>
     <div className="project-listbox" role="listbox" aria-label="Projects">

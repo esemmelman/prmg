@@ -700,7 +700,7 @@ test('task grid edits persist and failed edits remain available to retry', async
   await expect(page.getByRole('button',{name:/^(All Projects|Add project|Edit project|Delete project)$/})).toHaveCount(0)
   await expect(page.locator('.project-add')).toBeVisible()
   const projects = page.getByRole('listbox',{name:'Projects',exact:true})
-  await expect(projects.getByRole('option')).toHaveText(['Alpha','Zulu'])
+  await expect(projects.getByRole('option')).toHaveText(['_All','Alpha','Zulu'])
   await projects.getByRole('option',{name:data.projects[1].name,exact:true}).click()
   await expect(page.locator('.project-tabs button').first()).toHaveText('Log (0)')
   await expect(page.getByLabel('New log entry')).toHaveCount(0)
@@ -745,14 +745,14 @@ test('task grid edits persist and failed edits remain available to retry', async
   await page.getByRole('menuitem',{name:'Edit',exact:true}).click()
   await page.getByLabel('Project name').fill('Beta')
   await page.getByRole('button',{name:'Close dialog'}).click()
-  await expect(projects.getByRole('option')).toHaveText(['Beta','Zulu'])
+  await expect(projects.getByRole('option')).toHaveText(['_All','Beta','Zulu'])
   await projects.getByRole('option',{name:'Beta',exact:true}).click({button:'right'})
   await page.getByRole('menuitem',{name:'Delete',exact:true}).click()
-  await expect(projects.getByRole('option')).toHaveText(['Zulu'])
+  await expect(projects.getByRole('option')).toHaveText(['_All','Zulu'])
   await page.getByRole('button',{name:'Create project',exact:true}).click()
   await page.getByLabel('Project name').fill('New project')
   await page.getByRole('button',{name:'Close dialog'}).click()
-  await expect(projects.getByRole('option')).toHaveText(['New project','Zulu'])
+  await expect(projects.getByRole('option')).toHaveText(['_All','New project','Zulu'])
   await page.setViewportSize({width:390,height:844})
   expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
@@ -866,4 +866,58 @@ test('Pages and Links support project-scoped creation editing deletion and persi
   await expect(tabs.getByRole('button',{name:'Pages (1)',exact:true})).toBeVisible()
   await page.setViewportSize({width:390,height:844})
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+})
+
+
+test('_All groups every tab by project and preserves creation ownership', async ({page}) => {
+  const {data} = await mockWorkspace(page)
+  for (const name of ['Zulu','Alpha']) {
+    const project = {id:randomUUID(),name,status:'active',color:'#426951',created_at:now(),updated_at:now()}
+    data.projects.push(project)
+    data.tasks.push({id:randomUUID(),project_id:project.id,title:`${name} task`,status:'todo',priority:'medium',labels:[],checklist:[],created_at:now(),updated_at:now()})
+    for (const category of ['Project log','Project pages','Project links','Notes']) data.documents.push({id:randomUUID(),project_id:project.id,title:`${name} ${category}`,category,content:category === 'Project links' ? 'https://example.com/' : `${name} content`,created_at:now(),updated_at:now()})
+  }
+  await page.goto('./')
+  await page.getByRole('option',{name:'_All',exact:true}).click()
+  const tabs = page.locator('.project-tabs')
+  await expect(tabs.getByRole('button')).toHaveText(['Log (2)','Tasks (2)','Gantt chart (2)','Pages (2)','Links (2)','Knowledge base (2)'])
+  await expect(page.locator('.all-project-heading')).toHaveText(['Alpha','Zulu'])
+  const alpha = page.getByRole('region',{name:'Alpha project',exact:true}), zulu = page.getByRole('region',{name:'Zulu project',exact:true})
+  await expect(alpha.locator('.log-entry')).toContainText('Alpha content')
+  await expect(zulu.locator('.log-entry')).toContainText('Zulu content')
+  for (const tab of ['Tasks','Gantt chart','Pages','Links','Knowledge base']) {
+    await tabs.getByRole('button',{name:`${tab} (2)`,exact:true}).click()
+    await expect(page.locator('.all-project-heading')).toHaveText(['Alpha','Zulu'])
+    if (tab === 'Tasks') {
+      await expect(alpha.getByLabel('Title for Alpha task')).toBeVisible()
+      await expect(zulu.getByLabel('Title for Zulu task')).toBeVisible()
+    } else if (tab === 'Links') {
+      await expect(alpha.getByRole('link',{name:'Alpha Project links',exact:true})).toBeVisible()
+      await expect(zulu.getByRole('link',{name:'Zulu Project links',exact:true})).toBeVisible()
+    } else if (tab === 'Knowledge base') {
+      await expect(alpha.locator('.document-card')).toContainText('Alpha Notes')
+      await expect(zulu.locator('.document-card')).toContainText('Zulu Notes')
+      await alpha.getByRole('button',{name:'Add page',exact:true}).click()
+      await expect(page.getByRole('dialog').getByLabel('Project',{exact:true})).toHaveValue(data.projects[1].id)
+      await page.getByRole('button',{name:'Close dialog'}).click()
+    } else if (tab === 'Pages') {
+      await expect(alpha.getByRole('heading',{name:'Alpha Project pages',exact:true})).toBeVisible()
+    } else {
+      await expect(alpha.getByRole('region',{name:'Gantt chart',exact:true})).toBeVisible()
+      await expect(zulu.getByRole('region',{name:'Gantt chart',exact:true})).toBeVisible()
+    }
+  }
+  await tabs.getByRole('button',{name:'Log (2)',exact:true}).click()
+  await alpha.getByRole('button',{name:'Add',exact:true}).click()
+  await alpha.getByLabel('New log entry').fill('Created from all projects')
+  await alpha.getByRole('button',{name:'Add entry',exact:true}).click()
+  await expect(tabs.getByRole('button',{name:'Log (3)',exact:true})).toBeVisible()
+  expect(data.documents.find(document=>document.title==='Created from all projects').project_id).toBe(data.projects[1].id)
+  await page.screenshot({path:'test-results/all-projects.png',fullPage:true})
+  await page.getByRole('option',{name:'Alpha',exact:true}).click()
+  await expect(tabs.getByRole('button',{name:'Log (2)',exact:true})).toBeVisible()
+  await expect(page.locator('.log-entry')).toHaveCount(2)
+  await page.reload()
+  await page.getByRole('option',{name:'_All',exact:true}).click()
+  await expect(tabs.getByRole('button',{name:'Log (3)',exact:true})).toBeVisible()
 })
