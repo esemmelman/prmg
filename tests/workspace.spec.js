@@ -921,3 +921,23 @@ test('_All groups every tab by project and preserves creation ownership', async 
   await page.getByRole('option',{name:'_All',exact:true}).click()
   await expect(tabs.getByRole('button',{name:'Log (3)',exact:true})).toBeVisible()
 })
+
+test('Gantt task names show only days-away integers and darker weekends', async ({page}) => {
+  const {data} = await mockWorkspace(page)
+  const project = {id:randomUUID(),name:'Schedule',status:'active',color:'#426951',created_at:now(),updated_at:now()}
+  data.projects.push(project)
+  for (const [title,start,end] of [['Future task',addDays(today(),3),addDays(today(),5)],['Past task',addDays(today(),-2),today()],['Undated task',null,null]]) data.tasks.push({id:randomUUID(),project_id:project.id,title,start_date:start,due_date:end,status:'todo',priority:'medium',labels:[],checklist:[],created_at:now(),updated_at:now()})
+  await page.goto('./')
+  await page.getByRole('option',{name:'Schedule',exact:true}).click()
+  await page.locator('.project-tabs').getByRole('button',{name:'Gantt chart (3)',exact:true}).click()
+  const rows=page.locator('.gantt-row:not(.gantt-summary)')
+  const future=rows.filter({has:page.locator('.gantt-title-text').filter({hasText:'Future task'})})
+  const past=rows.filter({has:page.locator('.gantt-title-text').filter({hasText:'Past task'})})
+  await expect(future.locator('.gantt-title-text')).toHaveText('Future task 3')
+  await expect(future.locator('.gantt-task-balloon')).toHaveText('Future task 3')
+  await expect(past.locator('.gantt-title-text')).toHaveText('Past task -2')
+  await expect(rows.locator('.gantt-name small')).toHaveCount(0)
+  await expect(page.locator('.gantt-title-text').filter({hasText:'Undated task'})).toHaveText('Undated task')
+  await expect(page.locator('.gantt-days .weekend').first()).toHaveCSS('background-color','rgb(201, 214, 206)')
+  await page.screenshot({path:'test-results/gantt-days-away.png',fullPage:true})
+})
