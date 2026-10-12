@@ -89,6 +89,5 @@ export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, ma
         <td><button className="icon-button" aria-label={`Open details for ${task.title}`} onClick={() => onEdit('tasks',task)}><ArrowUpRight size={15}/></button></td>
       </tr>)}</tbody>
     </table>
-    {!tasks.length && <p className="grid-empty">No tasks match this view. Add a task below.</p>}
   </div>
 }

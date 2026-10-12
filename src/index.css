@@ -294,7 +294,6 @@ body, .login-page {
 .task-grid .grid-project { padding: 4px 8px; min-width: 120px; }
 .task-grid .grid-cell-error { background: #fff1ef; }
 .grid-cell-message { display: block; padding: 4px 8px; color: #a33b30; font-size: 12px; }
-.grid-empty { padding: 12px; margin: 0; font-size: 13px; color: var(--muted); }
 
 .listbox-layout .main-shell { margin-left: 0; width: 100%; }
 .project-picker { display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
@@ -356,3 +355,8 @@ body, .login-page {
 .project-link-main span { display: block; margin-top: 6px; color: #555; font-size: 14px; font-weight: 400; }
 .link-editor { display: grid; gap: 16px; }
 .project-tabs { flex-wrap: wrap; }
+
+.project-log[aria-label="Project log"] .log-entry { padding: 12px 0; }
+.project-log[aria-label="Project log"] .log-entry-content { margin: 8px 0 4px; }
+.project-log[aria-label="Project log"] .log-entry-content p { margin-bottom: 8px; }
+.project-log[aria-label="Project log"] .log-entry-content > :last-child { margin-bottom: 0; }
