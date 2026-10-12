@@ -26,6 +26,22 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete, kind =
   }, [showEditor, editing])
   const entries = data.documents.filter(entry => entry.category === category && entry.project_id === projectId && `${entry.title} ${plain(entryHtml(entry.content))}`.toLowerCase().includes(search.toLowerCase())).sort((a,b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id))
   function reset() { setShowEditor(false); setEditing(null); setTitle(''); setHasText(false); setError(''); addRef.current?.focus() }
+  function printPage(entry) {
+    const page = document.createElement('article')
+    page.className = 'print-page'
+    const heading = document.createElement('h1')
+    heading.textContent = entry.title
+    const content = document.createElement('div')
+    content.className = 'print-page-content'
+    content.innerHTML = entryHtml(entry.content)
+    page.append(heading, content)
+    const previousTitle = document.title
+    document.body.append(page)
+    document.body.classList.add('printing-page')
+    document.title = entry.title
+    try { window.print() }
+    finally { page.remove(); document.body.classList.remove('printing-page'); document.title = previousTitle }
+  }
   function format(command) { editorRef.current.focus(); document.execCommand('styleWithCSS', false, false); document.execCommand(command); setHasText(!!plain(editorRef.current.innerHTML)) }
   return <section className={`project-log ${pages ? 'project-pages' : ''}`} aria-label={pages ? 'Project pages' : 'Project log'}>
     {error && <p className="form-error" role="alert">{error}</p>}
@@ -36,7 +52,7 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete, kind =
       if (!window.confirm(pages ? 'Delete this page?' : 'Delete this log entry?')) return
       setBusy(true); setError('')
       try { await onDelete('documents',entry); if (editing?.id === entry.id) reset() } catch (err) { setError(err.message) } finally { setBusy(false) }
-    }}>Delete</button></div></div><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/></article>)}
+    }}>Delete</button>{pages && <button className="text-link" disabled={busy} onClick={() => printPage(entry)}>Print</button>}</div></div><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/></article>)}
     <button ref={addRef} className="button secondary small log-add" disabled={busy || showEditor} onClick={() => { setEditing(null); setTitle(''); setHasText(false); setError(''); setShowEditor(true) }}>Add</button>
     {showEditor && <form onSubmit={async event => {
       event.preventDefault(); if (busy) return
