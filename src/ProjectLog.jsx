@@ -12,6 +12,7 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete, kind =
   const pages = kind === 'pages'
   const category = pages ? 'Project pages' : 'Project log'
   const [title, setTitle] = useState('')
+  const [expandedPages, setExpandedPages] = useState(new Set())
   const editorRef = useRef(null)
   const addRef = useRef(null)
   const [showEditor, setShowEditor] = useState(false)
@@ -46,13 +47,18 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete, kind =
   return <section className={`project-log ${pages ? 'project-pages' : ''}`} aria-label={pages ? 'Project pages' : 'Project log'}>
     {error && <p className="form-error" role="alert">{error}</p>}
     {!entries.length && <p className="muted">{pages ? 'No pages for this project.' : 'No log entries for this project.'}</p>}
-    {entries.map(entry => <article className="log-entry" key={entry.id}><div className="log-entry-header">{pages && <h2 className="topic-title">{entry.title}</h2>}<time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
+    {entries.map(entry => <article className="log-entry" key={entry.id}><div className="log-entry-header">{pages && <h2 className="topic-title"><button className="page-topic-toggle" aria-expanded={expandedPages.has(entry.id)} aria-controls={`page-content-${entry.id}`} onClick={() => setExpandedPages(current => {
+      const next = new Set(current)
+      if (next.has(entry.id)) next.delete(entry.id)
+      else next.add(entry.id)
+      return next
+    })}>{entry.title}</button></h2>}<time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
       setEditing(entry); setTitle(entry.title); setShowEditor(true); setError(''); setHasText(!!plain(entryHtml(entry.content)))
     }}>Edit</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
       if (!window.confirm(pages ? 'Delete this page?' : 'Delete this log entry?')) return
       setBusy(true); setError('')
       try { await onDelete('documents',entry); if (editing?.id === entry.id) reset() } catch (err) { setError(err.message) } finally { setBusy(false) }
-    }}>Delete</button>{pages && <button className="text-link" disabled={busy} onClick={() => printPage(entry)}>Print</button>}</div></div><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/></article>)}
+    }}>Delete</button>{pages && <button className="text-link" disabled={busy} onClick={() => printPage(entry)}>Print</button>}</div></div>{(!pages || expandedPages.has(entry.id)) && <div id={`page-content-${entry.id}`} className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/>}</article>)}
     <button ref={addRef} className="button secondary small log-add" disabled={busy || showEditor} onClick={() => { setEditing(null); setTitle(''); setHasText(false); setError(''); setShowEditor(true) }}>Add</button>
     {showEditor && <form onSubmit={async event => {
       event.preventDefault(); if (busy) return
