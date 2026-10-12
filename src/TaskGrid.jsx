@@ -61,7 +61,7 @@ export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, ma
   return <div className="task-grid-scroll" role="region" aria-label="Task spreadsheet" tabIndex={0}>
     {moveError && <p className="form-error" role="alert">{moveError}</p>}
     <table className="task-grid" aria-label="Tasks" aria-busy={busy}>
-      <thead><tr><th scope="col">#</th><th scope="col">Task</th>{!projectId && <th scope="col">Project</th>}<th scope="col">Status</th><th scope="col">Start date</th><th scope="col">End date</th><th scope="col">Priority</th><th scope="col">Assignee</th><th scope="col">Details</th></tr></thead>
+      <thead><tr><th scope="col">#</th><th scope="col">Task</th>{!projectId && <th scope="col">Project</th>}<th scope="col">Status</th><th scope="col">Start date</th><th scope="col">End date</th><th scope="col">Priority</th><th scope="col">Details</th></tr></thead>
       <tbody>{tasks.map((task,index) => <tr key={task.id} draggable={manual && !busy} className={target?.id === task.id ? target.after ? 'grid-drop-after' : 'grid-drop-before' : ''} onDragStart={event => startDrag(event,task)} onDragEnd={() => { dragged.current = null; setTarget(null) }} onDragOver={event => {
         if (!manual || busy || !dragged.current || dragged.current.id === task.id) return
         event.preventDefault(); event.dataTransfer.dropEffect = 'move'
@@ -86,7 +86,6 @@ export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, ma
         <Cell task={task} field="start_date" label="Start date" type="date" onSave={save} disabled={busy}/>
         <Cell task={task} field="due_date" label="End date" type="date" onSave={save} disabled={busy}/>
         <Cell task={task} field="priority" label="Priority" options={PRIORITIES} onSave={save} disabled={busy}/>
-        <Cell task={task} field="assignee" label="Assignee" onSave={save} disabled={busy}/>
         <td><button className="icon-button" aria-label={`Open details for ${task.title}`} onClick={() => onEdit('tasks',task)}><ArrowUpRight size={15}/></button></td>
       </tr>)}</tbody>
     </table>
