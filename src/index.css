@@ -310,3 +310,26 @@ body, .login-page {
 .log-entry p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .listbox-layout .topbar-start { display: flex; gap: 12px; align-items: center; }
 @media(max-width:650px) { .listbox-layout .topbar { flex-wrap: wrap; height: auto; padding: 12px; gap: 10px; } .project-picker .field { width: 100%; } }
+.listbox-layout .main-content { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 28px; align-items: start; }
+.project-picker { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 18px 0 0; position: relative; width: 210px; max-width: 100%; }
+.project-picker .project-add { align-self: flex-start; }
+.project-listbox { height: 150px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; }
+.project-listbox [role=option] { padding: 6px 8px; cursor: pointer; overflow-wrap: anywhere; }
+.project-listbox [aria-selected=true] { background: #e8eee8; }
+.project-listbox [role=option]:focus { outline: 2px solid #426951; outline-offset: -2px; }
+.project-context-menu { background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 18px #0002; padding: 4px; z-index: 10; position: absolute; top: 65px; left: 30px; width: 145px; }
+.project-context-menu button { display: block; text-align: left; width: 100%; padding: 8px 12px; }
+.project-context-menu button:hover, .project-context-menu button:focus { background: #eef3ee; }
+.workspace-center { min-width: 0; }
+.rich-text-toolbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border: 1px solid var(--border); border-radius: 6px 6px 0 0; }
+.rich-text-toolbar button { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; }
+.rich-text-toolbar button:hover { background: #eef3ee; }
+.rich-text-editor { min-height: 210px; padding: 16px; border: 1px solid var(--border); border-radius: 0 0 6px 6px; outline-color: #426951; overflow-wrap: anywhere; }
+.project-log form { gap: 0; }
+.log-editor-label { margin-bottom: 8px; color: var(--muted); }
+.log-editor-actions, .log-entry-actions { display: flex; gap: 16px; margin-top: 12px; }
+.log-entry-content { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; }
+.rich-text-editor ul, .log-entry-content ul { list-style: disc; padding-left: 24px; }
+.rich-text-editor ol, .log-entry-content ol { list-style: decimal; padding-left: 24px; }
+@media(max-width:650px) { .listbox-layout .main-content { grid-template-columns: minmax(0,1fr); gap: 18px; } .project-picker { width: 210px; } }
+.rich-text-editor, .log-entry-content { font-weight: 400; }
