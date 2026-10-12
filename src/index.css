@@ -301,8 +301,7 @@ body, .login-page {
 .project-picker .field { width: 360px; max-width: 100%; }
 .project-picker select { height: 130px; padding: 4px; }
 .project-picker option { padding: 5px 8px; }
-.project-picker-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.all-projects-button { margin-bottom: 24px; }
+.project-picker .project-add { align-self: flex-start; }
 .project-log { max-width: 900px; }
 .project-log form { display: grid; gap: 12px; margin-bottom: 24px; }
 .project-log form .button { justify-self: start; }
