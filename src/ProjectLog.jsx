@@ -27,7 +27,7 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete }) {
   return <section className="project-log" aria-label="Project log">
     {error && <p className="form-error" role="alert">{error}</p>}
     {!entries.length && <p className="muted">No log entries for this project.</p>}
-    {entries.map(entry => <article className="log-entry" key={entry.id}><div className="log-entry-header"><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
+    {entries.map(entry => <article className="log-entry" key={entry.id}><div className="log-entry-header"><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
       setEditing(entry); setShowEditor(true); setError(''); setHasText(!!plain(entryHtml(entry.content)))
     }}>Edit</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
       if (!window.confirm('Delete this log entry?')) return
