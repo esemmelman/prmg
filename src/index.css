@@ -396,3 +396,8 @@ body, .login-page {
 
 .page-topic-toggle { text-align: left; padding: 0; font: inherit; color: inherit; }
 .page-topic-toggle:hover { text-decoration: underline; }
+
+.android-device .search-box { display: none; }
+.projects-hidden .workspace-header { min-height: 44px; }
+.projects-hidden .workspace-header .listbox-show { left: 0; top: 12px; width: 28px; height: 32px; }
+.projects-hidden .workspace-header .page-heading { padding-left: 34px; }
