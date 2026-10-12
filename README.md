@@ -34,6 +34,6 @@ In the Tasks grid, drag a row’s numbered grip to move it above or below another 
 
 Pages and Links appear after Gantt chart and before Knowledge base. Pages holds multiple titled rich-text topics for each project; Links holds named HTTP/HTTPS URLs that open in a new tab. Both support add, edit, delete, and search. They persist as project-linked documents in the reserved `Project pages` and `Project links` categories and are excluded from Knowledge base.
 
-The built-in `_All` listbox item combines all projects, including archived projects, with alphabetical project headings on all six tabs. Counts show combined totals. Create or edit records within a project group to keep them attached to that project. `_All` is a view rather than a stored project and has no edit/delete menu.
+The built-in `_All` listbox item combines all projects, including archived projects, with alphabetical project headings. The combined Gantt view shows tasks only, sorted by start date then task name, with project names in parentheses beneath each task; undated tasks appear last. Counts show combined totals. Create or edit records within a project group to keep them attached to that project. `_All` is a view rather than a stored project and has no edit/delete menu.
 
 Pages initially shows topic titles. Click a title to expand or collapse its content. Edit, Delete, and Print remain available on the title row.

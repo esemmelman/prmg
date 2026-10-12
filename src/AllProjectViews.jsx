@@ -4,6 +4,7 @@ import { Tasks, Knowledge, GanttChart } from './Views'
 
 export function AllProjectViews({ currentView, data, onEdit, ...props }) {
   const projects = [...data.projects].sort((a,b) => a.name.localeCompare(b.name,undefined,{sensitivity:'base',numeric:true}) || a.id.localeCompare(b.id))
+  if (currentView === 'gantt') return <GanttChart {...props} data={data} projectId={null} onEdit={onEdit} includeArchived combined/>
   return <div className="all-project-groups">
     {!projects.length && <p className="muted">No projects yet.</p>}
     {projects.map(project => {

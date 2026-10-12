@@ -893,7 +893,7 @@ test('_All groups every tab by project and preserves creation ownership', async 
   await expect(zulu.locator('.log-entry')).toContainText('Zulu content')
   for (const tab of ['Tasks','Gantt chart','Pages','Links','Knowledge base']) {
     await tabs.getByRole('button',{name:`${tab} (2)`,exact:true}).click()
-    await expect(page.locator('.all-project-heading')).toHaveText(['Alpha','Zulu'])
+    if (tab !== 'Gantt chart') await expect(page.locator('.all-project-heading')).toHaveText(['Alpha','Zulu'])
     if (tab === 'Tasks') {
       await expect(alpha.getByLabel('Title for Alpha task')).toBeVisible()
       await expect(zulu.getByLabel('Title for Zulu task')).toBeVisible()
@@ -909,8 +909,9 @@ test('_All groups every tab by project and preserves creation ownership', async 
     } else if (tab === 'Pages') {
       await expect(alpha.getByRole('heading',{name:'Alpha Project pages',exact:true})).toBeVisible()
     } else {
-      await expect(alpha.getByRole('region',{name:'Gantt chart',exact:true})).toBeVisible()
-      await expect(zulu.getByRole('region',{name:'Gantt chart',exact:true})).toBeVisible()
+      await expect(page.getByRole('region',{name:'Gantt chart',exact:true})).toHaveCount(1)
+      await expect(page.locator('.gantt-summary')).toHaveCount(0)
+      await expect(page.locator('.gantt-project-name')).toHaveText(['(Alpha)','(Zulu)'])
     }
   }
   await tabs.getByRole('button',{name:'Log (2)',exact:true}).click()
@@ -1019,4 +1020,24 @@ test('Android hides search and full-page chevron has an inset touch target', asy
   await page.getByRole('button',{name:'Show project list',exact:true}).click()
   await expect(page.getByRole('listbox',{name:'Projects',exact:true})).toBeVisible()
   await context.close()
+})
+
+
+test('All Gantt combines tasks in start date then alphabetical order', async ({page}) => {
+  const {data} = await mockWorkspace(page)
+  for(const name of ['Zulu','Alpha']) data.projects.push({id:randomUUID(),name,status:'active',color:'#426951',created_at:now(),updated_at:now()})
+  for(const [title,offset,projectIndex] of [['Zebra',2,0],['Apple',2,1],['Earlier',1,0],['Undated',null,1]]) data.tasks.push({id:randomUUID(),project_id:data.projects[projectIndex].id,title,start_date:offset===null ? null : addDays(today(),offset),due_date:offset===null ? null : addDays(today(),offset+1),status:'todo',priority:'medium',labels:[],checklist:[],created_at:now(),updated_at:now()})
+  await page.goto('./')
+  await page.getByRole('option',{name:'_All',exact:true}).click()
+  await page.locator('.project-tabs').getByRole('button',{name:'Gantt chart (4)',exact:true}).click()
+  await expect(page.locator('.gantt-title-text')).toHaveText(['Earlier 1','Apple 2','Zebra 2','Undated'])
+  await expect(page.locator('.gantt-project-name')).toHaveText(['(Zulu)','(Alpha)','(Zulu)','(Alpha)'])
+  await expect(page.locator('.gantt-summary')).toHaveCount(0)
+  await expect(page.locator('.gantt-order-handle')).toHaveCount(0)
+  await page.setViewportSize({width:393,height:851})
+  await expect(page.locator('.gantt-title-text')).toHaveText(['Earlier 1','Apple 2','Zebra 2','Undated'])
+  await page.getByRole('option',{name:'Zulu',exact:true}).click()
+  await page.locator('.project-tabs').getByRole('button',{name:'Gantt chart (2)',exact:true}).click()
+  await expect(page.locator('.gantt-summary')).toHaveCount(1)
+  await expect(page.locator('.gantt-project-name')).toHaveCount(0)
 })
