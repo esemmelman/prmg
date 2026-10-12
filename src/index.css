@@ -413,3 +413,5 @@ body, .login-page {
 }
 
 .field textarea.description-expanded { min-height: 240px; max-height: 45vh; }
+
+.task-grid tbody tr:focus { outline: 2px solid #426951; outline-offset: -2px; }

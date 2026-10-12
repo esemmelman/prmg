@@ -1062,3 +1062,22 @@ test('Description expands on focus and keeps edits when collapsed', async ({page
   await page.getByRole('button',{name:'Close dialog'}).click()
   expect(data.projects[0].description).toBe('Expanded draft')
 })
+
+
+test('Android Tasks focuses the first existing row instead of new task input', async ({browser}) => {
+  const context=await browser.newContext({viewport:{width:393,height:851},userAgent:'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36'})
+  const page=await context.newPage()
+  const {data}=await mockWorkspace(page)
+  data.projects.push({id:randomUUID(),name:'Android tasks',status:'active',color:'#426951',created_at:now(),updated_at:now()})
+  data.tasks.push({id:randomUUID(),project_id:data.projects[0].id,title:'First existing task',status:'todo',priority:'medium',labels:[],checklist:[],created_at:now(),updated_at:now()})
+  await page.goto('./')
+  await page.getByRole('option',{name:'Android tasks',exact:true}).click()
+  await page.locator('.project-tabs').getByRole('button',{name:'Tasks (1)',exact:true}).click()
+  await expect(page.locator('.task-grid tbody tr').first()).toBeFocused()
+  await expect(page.locator('.inline-task').getByLabel('Title',{exact:true})).not.toBeFocused()
+  await page.getByRole('button',{name:'Show project list',exact:true}).click()
+  await page.getByRole('option',{name:'_All',exact:true}).click()
+  await page.locator('.project-tabs').getByRole('button',{name:'Tasks (1)',exact:true}).click()
+  await expect(page.locator('.task-grid tbody tr').first()).toBeFocused()
+  await context.close()
+})

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, GripVertical } from 'lucide-react'
 import { TASK_STATUSES, PRIORITIES } from './utils'
 
@@ -33,7 +33,9 @@ function Cell({ task, field, label, type = 'text', options, onSave, disabled }) 
   </td>
 }
 
-export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, manual }) {
+export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, manual, focusFirst = false }) {
+  const gridRef = useRef(null)
+  useEffect(() => { if (focusFirst) gridRef.current?.querySelector('tbody tr')?.focus() }, [focusFirst])
   const [busy, setBusy] = useState(false)
   const pending = useRef(false)
   const dragged = useRef(null)
@@ -58,11 +60,11 @@ export function TaskGrid({ tasks, data, projectId, onSave, onEdit, onReorder, ma
     try { return await onSave(...args) }
     finally { pending.current = false; setBusy(false) }
   }
-  return <div className="task-grid-scroll" role="region" aria-label="Task spreadsheet" tabIndex={0}>
+  return <div ref={gridRef} className="task-grid-scroll" role="region" aria-label="Task spreadsheet" tabIndex={0}>
     {moveError && <p className="form-error" role="alert">{moveError}</p>}
     <table className="task-grid" aria-label="Tasks" aria-busy={busy}>
       <thead><tr><th scope="col">#</th><th scope="col">Task</th>{!projectId && <th scope="col">Project</th>}<th scope="col">Status</th><th scope="col">Start date</th><th scope="col">End date</th><th scope="col">Priority</th><th scope="col">Details</th></tr></thead>
-      <tbody>{tasks.map((task,index) => <tr key={task.id} draggable={manual && !busy} className={target?.id === task.id ? target.after ? 'grid-drop-after' : 'grid-drop-before' : ''} onDragStart={event => startDrag(event,task)} onDragEnd={() => { dragged.current = null; setTarget(null) }} onDragOver={event => {
+      <tbody>{tasks.map((task,index) => <tr key={task.id} tabIndex={-1} draggable={manual && !busy} className={target?.id === task.id ? target.after ? 'grid-drop-after' : 'grid-drop-before' : ''} onDragStart={event => startDrag(event,task)} onDragEnd={() => { dragged.current = null; setTarget(null) }} onDragOver={event => {
         if (!manual || busy || !dragged.current || dragged.current.id === task.id) return
         event.preventDefault(); event.dataTransfer.dropEffect = 'move'
         const rect = event.currentTarget.getBoundingClientRect()

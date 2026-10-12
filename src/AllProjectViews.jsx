@@ -8,7 +8,7 @@ export function AllProjectViews({ currentView, data, onEdit, ...props }) {
   return <div className="all-project-groups">
     {!projects.length && <p className="muted">No projects yet.</p>}
     {projects.map(project => {
-      const scoped = {...props,data,projectId:project.id,includeArchived:true,taskFocusRequest:0,autoFocus:false,onEdit:(type,item,defaults={}) => onEdit(type,item,{...defaults,project_id:project.id})}
+      const scoped = {...props,data,projectId:project.id,includeArchived:true,taskFocusRequest:0,autoFocus:/Android/i.test(navigator.userAgent) && project.id === projects.find(candidate => data.tasks.some(task => task.project_id === candidate.id))?.id,onEdit:(type,item,defaults={}) => onEdit(type,item,{...defaults,project_id:project.id})}
       return <section className="all-project-group" aria-label={`${project.name} project`} key={project.id}><h2 className="all-project-heading">{project.name}</h2>
         {currentView === 'log' && <ProjectLog {...scoped}/>}
         {currentView === 'pages' && <ProjectLog {...scoped} kind="pages"/>}
