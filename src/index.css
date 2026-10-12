@@ -376,3 +376,10 @@ body, .login-page {
 .all-project-heading { font-size: 22px; padding: 8px 0; border-bottom: 2px solid #426951; margin-bottom: 12px; }
 
 .gantt-months span, .gantt-days span { font-weight: 700; }
+
+.listbox-layout .main-content { position: relative; }
+.project-list-panel { position: relative; width: 210px; max-width: 100%; }
+.listbox-toggle { position: absolute; right: -28px; top: 18px; width: 24px; }
+.listbox-layout .main-content.projects-hidden { grid-template-columns: minmax(0,1fr); }
+.listbox-show { left: 0; right: auto; top: 32px; width: 22px; }
+@media(max-width:650px) { .listbox-show { top: 22px; } }
