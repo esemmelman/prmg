@@ -6,6 +6,7 @@ import { version } from '../package.json'
 import { PROJECT_STATUSES, progress, downloadJson, formatDate } from './utils'
 import { Editor, Modal } from './Editor'
 import { ProjectListbox } from './ProjectListbox'
+import { ProjectLinks } from './ProjectLinks'
 import { ProjectLog } from './ProjectLog'
 import { Projects, Tasks, Knowledge, GanttChart, Badge } from './Views'
 
@@ -161,8 +162,10 @@ export default function App() {
       {!online && <div className="error-banner" role="status">You’re offline. Your saved workspace is visible; reconnect to make changes.</div>}
       {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => refresh()} className="text-link">Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
       {project && <><div className="project-summary"><span><CalendarDays size={15}/>{project.start_date ? formatDate(project.start_date) : 'No start date'} — {project.due_date ? formatDate(project.due_date) : 'No deadline'}</span><span><Check size={15}/>{progress(data.tasks.filter(t => t.project_id === project.id))}% complete</span></div></>}
-      {(project || allProjects) && <div className="project-tabs">{(allProjects ? [['gantt','Gantt chart',CalendarDays],['tasks','Tasks',ListTodo],['knowledge','Knowledge base',BookOpen]] : [['log','Log',BookOpen],['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],['knowledge','Knowledge base',BookOpen]]).map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
+      {(project || allProjects) && <div className="project-tabs">{(allProjects ? [['gantt','Gantt chart',CalendarDays],['tasks','Tasks',ListTodo],['knowledge','Knowledge base',BookOpen]] : [['log','Log',BookOpen],['tasks','Tasks',ListTodo],['gantt','Gantt chart',CalendarDays],['pages','Pages',BookOpen],['links','Links',BookOpen],['knowledge','Knowledge base',BookOpen]]).map(([key,label,Icon]) => <button key={key} className={projectTab === key ? 'active' : ''} onClick={() => { setProjectTab(key); setSearch('') }}><Icon size={16}/>{label}</button>)}</div>}
       {currentView === 'log' && project && <ProjectLog key={project.id} data={data} projectId={project.id} search={search} onCreate={save} onDelete={remove}/>}
+      {currentView === 'pages' && project && <ProjectLog key={`pages-${project.id}`} kind="pages" data={data} projectId={project.id} search={search} onCreate={save} onDelete={remove}/>}
+      {currentView === 'links' && project && <ProjectLinks key={project.id} data={data} projectId={project.id} search={search} onSave={save} onDelete={remove}/>}
       {currentView === 'projects' && <Projects {...props}/>}{currentView === 'tasks' && <Tasks key={`${projectId || view}-${taskFilter}`} {...props} initialFilter={taskFilter}/>}{currentView === 'knowledge' && <Knowledge key={projectId || 'all'} {...props}/>}{currentView === 'gantt' && <GanttChart key={projectId || 'all'} {...props}/>}
 
       </div></main></div>
