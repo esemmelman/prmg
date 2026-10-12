@@ -29,11 +29,11 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete }) {
     {!entries.length && <p className="muted">No log entries for this project.</p>}
     {entries.map(entry => <article className="log-entry" key={entry.id}><div className="log-entry-header"><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString()}</time><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
       setEditing(entry); setShowEditor(true); setError(''); setHasText(!!plain(entryHtml(entry.content)))
-    }}>Edit entry</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
+    }}>Edit</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
       if (!window.confirm('Delete this log entry?')) return
       setBusy(true); setError('')
       try { await onDelete('documents',entry); if (editing?.id === entry.id) reset() } catch (err) { setError(err.message) } finally { setBusy(false) }
-    }}>Delete entry</button></div></div><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/></article>)}
+    }}>Delete</button></div></div><div className="log-entry-content" dangerouslySetInnerHTML={{__html:entryHtml(entry.content)}}/></article>)}
     <button ref={addRef} className="button secondary small log-add" disabled={busy || showEditor} onClick={() => { setEditing(null); setHasText(false); setError(''); setShowEditor(true) }}>Add</button>
     {showEditor && <form onSubmit={async event => {
       event.preventDefault(); if (busy) return
