@@ -285,9 +285,9 @@ body, .login-page {
 .task-grid { width: 100%; min-width: 940px; border-collapse: separate; border-spacing: 0; font-size: 13px; }
 .task-grid th, .task-grid td { border-right: 1px solid #e1e6e1; border-bottom: 1px solid #e1e6e1; padding: 0; text-align: left; }
 .task-grid thead th { position: sticky; top: 0; z-index: 1; background: #f1f4f0; padding: 7px 9px; white-space: nowrap; font-weight: 700; }
-.task-grid tbody th { width: 36px; padding: 5px 8px; text-align: center; background: #f7f8f6; color: var(--muted); font-weight: 400; }
+.task-grid tbody th { width: 36px; padding: 5px 8px; text-align: center; background: #f7f8f6; color: var(--muted); font-weight: 700; }
 .task-grid td:nth-child(2) { min-width: 220px; }
-.task-grid input, .task-grid select { display: block; width: 100%; min-width: 105px; height: 32px; padding: 4px 8px; border: 0; border-radius: 0; background: transparent; font-size: 13px; font-weight: 400; }
+.task-grid input, .task-grid select { display: block; width: 100%; min-width: 105px; height: 32px; padding: 4px 8px; border: 0; border-radius: 0; background: transparent; font-size: 13px; font-weight: 700; }
 .task-grid input[type=date] { min-width: 132px; }
 .task-grid input:focus, .task-grid select:focus { outline: 2px solid #426951; outline-offset: -2px; background: #f7fbf7; }
 .task-grid tbody tr:hover { background: #fafcf9; }
@@ -338,3 +338,5 @@ body, .login-page {
 
 .log-add { margin: 16px 0; }
 .project-listbox .muted { color: #555; font: inherit; }
+
+.task-grid tbody, .task-card, .task-card button, .task-card .task-meta, .task-card .task-meta span { font-weight: 700; }
