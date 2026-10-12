@@ -17,7 +17,7 @@ export function ProjectLinks({ data, projectId, search, onSave, onDelete }) {
   return <section className="project-links" aria-label="Project links">
     {error && <p className="form-error" role="alert">{error}</p>}
     {!links.length && <p className="muted">No links for this project.</p>}
-    {links.map(link => <article className="project-link" key={link.id}><div className="project-link-main">{safeUrl(link.content) ? <a href={safeUrl(link.content)} target="_blank" rel="noopener noreferrer">{link.title}</a> : <strong>{link.title}</strong>}<span>{link.content}</span></div><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => { setEditing(link); setTitle(link.title); setUrl(link.content); setError(''); setShowEditor(true) }}>Edit</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
+    {links.map(link => <article className="project-link" key={link.id}><div className="project-link-main">{safeUrl(link.content) ? <a href={safeUrl(link.content)} target="_blank" rel="noopener noreferrer">{link.title}</a> : <strong>{link.title}</strong>}</div><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => { setEditing(link); setTitle(link.title); setUrl(link.content); setError(''); setShowEditor(true) }}>Edit</button><button className="text-link danger-text" disabled={busy} onClick={async () => {
       if (!window.confirm('Delete this link?')) return
       setBusy(true); setError('')
       try { await onDelete('documents',link); if (editing?.id === link.id) close() } catch (err) { setError(err.message) } finally { setBusy(false) }

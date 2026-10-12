@@ -352,7 +352,6 @@ body, .login-page {
 .project-link { display: flex; gap: 18px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .project-link-main { min-width: 0; flex: 1; overflow-wrap: anywhere; }
 .project-link-main a { font-weight: 700; }
-.project-link-main span { display: block; margin-top: 6px; color: #555; font-size: 14px; font-weight: 400; }
 .link-editor { display: grid; gap: 16px; }
 .project-tabs { flex-wrap: wrap; }
 
@@ -360,3 +359,6 @@ body, .login-page {
 .project-log[aria-label="Project log"] .log-entry-content { margin: 8px 0 4px; }
 .project-log[aria-label="Project log"] .log-entry-content p { margin-bottom: 8px; }
 .project-log[aria-label="Project log"] .log-entry-content > :last-child { margin-bottom: 0; }
+
+.project-pages .topic-title { width: auto; flex: 1; }
+.project-pages .log-entry-actions { margin-left: 0; }

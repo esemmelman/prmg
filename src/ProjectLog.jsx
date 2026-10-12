@@ -27,7 +27,7 @@ export function ProjectLog({ data, projectId, search, onCreate, onDelete, kind =
   const entries = data.documents.filter(entry => entry.category === category && entry.project_id === projectId && `${entry.title} ${plain(entryHtml(entry.content))}`.toLowerCase().includes(search.toLowerCase())).sort((a,b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id))
   function reset() { setShowEditor(false); setEditing(null); setTitle(''); setHasText(false); setError(''); addRef.current?.focus() }
   function format(command) { editorRef.current.focus(); document.execCommand('styleWithCSS', false, false); document.execCommand(command); setHasText(!!plain(editorRef.current.innerHTML)) }
-  return <section className="project-log" aria-label={pages ? 'Project pages' : 'Project log'}>
+  return <section className={`project-log ${pages ? 'project-pages' : ''}`} aria-label={pages ? 'Project pages' : 'Project log'}>
     {error && <p className="form-error" role="alert">{error}</p>}
     {!entries.length && <p className="muted">{pages ? 'No pages for this project.' : 'No log entries for this project.'}</p>}
     {entries.map(entry => <article className="log-entry" key={entry.id}><div className="log-entry-header">{pages && <h2 className="topic-title">{entry.title}</h2>}<time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time><div className="log-entry-actions"><button className="text-link" disabled={busy} onClick={() => {
